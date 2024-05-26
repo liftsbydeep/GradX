@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "338299194005",
+    "project_id": "alumify-507f9",
+    "storage_bucket": "alumify-507f9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:338299194005:android:d37830638028986193a99c",
+        "android_client_info": {
+          "package_name": "com.example.gradx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "338299194005-6lo1eaugo70c91an074de0h7hgsafg6q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.gradx",
+            "certificate_hash": "e112afe4865fc38fd7014663ae09a41e86457100"
+          }
+        },
+        {
+          "client_id": "338299194005-0j1vpangrfm5lkj3ihj1240iii0nki8t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgMi5I0--wCEpHtJlaxLBl_1HXepRo69Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "338299194005-0j1vpangrfm5lkj3ihj1240iii0nki8t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

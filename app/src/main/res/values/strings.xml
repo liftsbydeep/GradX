@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Alumify</string>
+    <string name="forget_password"><u>Forget Password?</u></string>
+    <string name="terms_amp_conditions"><u><![CDATA[terms & conditions]]></u></string>
+    <string name="sign_up"><u>Sign Up</u></string>
+    <string name="signup">Sign up</string>
+    <string name="login"><u>Login</u></string>
+    <string name="default_web_client_id">default_web_client_id</string>
+</resources>
