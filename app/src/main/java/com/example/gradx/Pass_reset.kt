@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.gradx.databinding.ActivityPassResetBinding
 import com.google.firebase.FirebaseException
+import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.PhoneAuthCredential
@@ -48,18 +49,10 @@ class Pass_reset : AppCompatActivity() {
                     progressBar.visibility = View.VISIBLE
                     startPhoneNumberVerification(phone)
                 } else {
-                    Toast.makeText(
-                        this,
-                        "Please enter a valid phone number in E.164 format",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this, "Invalid phone number", Toast.LENGTH_SHORT).show()
                 }
             } else {
-                Toast.makeText(
-                    this,
-                    "Please enter your email address or phone number",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, "Fields cannot be empty", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -67,20 +60,19 @@ class Pass_reset : AppCompatActivity() {
     private fun sendPasswordResetEmail(email: String) {
         auth.sendPasswordResetEmail(email)
             .addOnCompleteListener { task ->
-                progressBar.visibility = View.GONE
                 if (task.isSuccessful) {
-                    Toast.makeText(this, "Password reset email sent", Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    Toast.makeText(this, "Failed to send password reset email", Toast.LENGTH_SHORT)
+                    Toast.makeText(this, "Email sent for password reset", Toast.LENGTH_SHORT)
                         .show()
+                } else {
+                    Toast.makeText(this, "Failed to send email", Toast.LENGTH_SHORT).show()
                 }
+                progressBar.visibility = View.GONE
             }
     }
 
-    private fun startPhoneNumberVerification(phoneNumber: String) {
+    private fun startPhoneNumberVerification(phone: String) {
         val options = PhoneAuthOptions.newBuilder(auth)
-            .setPhoneNumber(phoneNumber)
+            .setPhoneNumber(phone)
             .setTimeout(60L, TimeUnit.SECONDS)
             .setActivity(this)
             .setCallbacks(callbacks)
@@ -94,11 +86,20 @@ class Pass_reset : AppCompatActivity() {
         }
 
         override fun onVerificationFailed(e: FirebaseException) {
-            Toast.makeText(
-                this@Pass_reset,
-                "Failed to send verification code",
-                Toast.LENGTH_SHORT
-            ).show()
+            when (e) {
+                is FirebaseAuthInvalidCredentialsException -> {
+                    // Invalid request
+                    Toast.makeText(this@Pass_reset, "Invalid verification code", Toast.LENGTH_LONG).show()
+                }
+                is FirebaseTooManyRequestsException -> {
+                    // The SMS quota for the project has been exceeded
+                    Toast.makeText(this@Pass_reset, "SMS quota exceeded. Please try again later.", Toast.LENGTH_LONG).show()
+                }
+                else -> {
+                    // Some other error occurred
+                    Toast.makeText(this@Pass_reset, "Failed to send verification code", Toast.LENGTH_LONG).show()
+                }
+            }
             progressBar.visibility = View.GONE
         }
 
