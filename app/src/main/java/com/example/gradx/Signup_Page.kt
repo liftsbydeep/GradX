@@ -109,8 +109,6 @@ class Signup_Page : AppCompatActivity() {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
-        binding.passwordsignup.isPasswordVisibilityToggleEnabled = true
-        binding.cnfpass.isPasswordVisibilityToggleEnabled = true
     }
 
     private fun check(): Boolean {
@@ -173,7 +171,7 @@ class Signup_Page : AppCompatActivity() {
             }
     }
 
-    fun Context.showAlertDialog(title: String, message: String) {
+    private fun Context.showAlertDialog(title: String, message: String) {
         // Inflate the custom layout/view
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.custom_dialog_box, null)

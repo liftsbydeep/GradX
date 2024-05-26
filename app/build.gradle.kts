@@ -1,5 +1,3 @@
-import java.security.Permission
-
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
