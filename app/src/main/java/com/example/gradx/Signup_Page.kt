@@ -1,7 +1,4 @@
 package com.example.gradx
-// In signup.kt
-// In signup.kt
-
 
 import android.app.Activity
 import android.content.Context
@@ -25,7 +22,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class Signup_Page : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
@@ -40,10 +40,9 @@ class Signup_Page : AppCompatActivity() {
         binding = ActivitySignupPageBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        auth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
+        auth = Firebase.auth
+        db = Firebase.firestore
         progressBar = binding.progressBar5
-        val Dialog_Box = Dialog_Box()
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -56,8 +55,6 @@ class Signup_Page : AppCompatActivity() {
             progressBar.visibility = View.VISIBLE
             signInWithGoogle()
         }
-// In signup.kt
-        val dialogBox = Dialog_Box()
 
         binding.signupbtn.setOnClickListener {
             if (check()) {
@@ -73,7 +70,7 @@ class Signup_Page : AppCompatActivity() {
                     "Email" to Email
                 )
                 val Users = db.collection("USERS")
-                val query = Users.whereEqualTo("Email", Email).get()
+                Users.whereEqualTo("Email", Email).get()
                     .addOnSuccessListener { documents ->
                         if (documents.isEmpty) {
                             auth.createUserWithEmailAndPassword(Email, Password)
@@ -85,7 +82,7 @@ class Signup_Page : AppCompatActivity() {
                                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                                         finish()
                                     } else {
-                                      showAlertDialog("Alert", task.exception?.message ?: "Unknown Error")
+                                        showAlertDialog("Alert", task.exception?.message ?: "Unknown Error")
                                     }
                                 }
                         } else {
@@ -96,7 +93,7 @@ class Signup_Page : AppCompatActivity() {
                     }
                     .addOnFailureListener { exception ->
                         progressBar.visibility = View.GONE
-                      showAlertDialog("Alert", exception.message ?: "Unknown Error")
+                        showAlertDialog("Alert", exception.message ?: "Unknown Error")
                     }
             } else {
                 progressBar.visibility = View.GONE
@@ -108,7 +105,6 @@ class Signup_Page : AppCompatActivity() {
             startActivity(Intent(this, Login_Page::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
-
     }
 
     private fun check(): Boolean {
@@ -156,20 +152,27 @@ class Signup_Page : AppCompatActivity() {
 
     private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
         Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: starting")
-        val credentials = GoogleAuthProvider.getCredential(account.idToken, null)
-        auth.signInWithCredential(credentials)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: success")
-                    startActivity(Intent(this, Landing_page::class.java))
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                    finish()
-                } else {
-                    Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: failed")
-                    Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+        val idToken = account.idToken
+        if (idToken != null) {
+            val credentials = GoogleAuthProvider.getCredential(idToken, null)
+            auth.signInWithCredential(credentials)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: success")
+                        startActivity(Intent(this, Landing_page::class.java))
+                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        finish()
+                    } else {
+                        Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: failed")
+                        Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
+        } else {
+            // Handle case where ID token is null
+            Log.e("LoginScreenActivity", "ID token is null")
+        }
     }
+
 
     private fun Context.showAlertDialog(title: String, message: String) {
         // Inflate the custom layout/view
@@ -198,6 +201,4 @@ class Signup_Page : AppCompatActivity() {
         // Show the dialog
         dialog.show()
     }
-
-
 }

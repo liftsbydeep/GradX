@@ -17,4 +17,10 @@
     <string name="enter_your_details">Enter your details</string>
     <string name="name">Name</string>
     <string name="password">Password</string>
+    <string name="already_have_an_account">Already have an account?</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="email">Email</string>
+    <string name="todo">TODO</string>
+    <string name="tod">TODO</string>
 </resources>
