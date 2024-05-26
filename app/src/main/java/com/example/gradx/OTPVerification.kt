@@ -4,8 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
@@ -19,12 +21,12 @@ class OTPVerification : AppCompatActivity() {
     private lateinit var editTextOTP5: EditText
     private lateinit var editTextOTP6: EditText
     private lateinit var buttonVerify: Button
+    private lateinit var progressBar: ProgressBar
 
     private var verificationId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_otpverification)
 
         // Get verification ID from intent
@@ -37,13 +39,14 @@ class OTPVerification : AppCompatActivity() {
         editTextOTP5 = findViewById(R.id.editTextOTP5)
         editTextOTP6 = findViewById(R.id.editTextOTP6)
         buttonVerify = findViewById(R.id.buttonVerify)
+        progressBar = findViewById(R.id.progressBar3)
 
         // Add text change listeners to automatically shift cursor to next EditText
-        editTextOTP1.addTextChangedListener(OTPTextWatcher(editTextOTP1, editTextOTP2))
-        editTextOTP2.addTextChangedListener(OTPTextWatcher(editTextOTP2, editTextOTP3))
-        editTextOTP3.addTextChangedListener(OTPTextWatcher(editTextOTP3, editTextOTP4))
-        editTextOTP4.addTextChangedListener(OTPTextWatcher(editTextOTP4, editTextOTP5))
-        editTextOTP5.addTextChangedListener(OTPTextWatcher(editTextOTP5, editTextOTP6))
+        editTextOTP1.addTextChangedListener(OTPTextWatcher(editTextOTP2))
+        editTextOTP2.addTextChangedListener(OTPTextWatcher(editTextOTP3))
+        editTextOTP3.addTextChangedListener(OTPTextWatcher(editTextOTP4))
+        editTextOTP4.addTextChangedListener(OTPTextWatcher(editTextOTP5))
+        editTextOTP5.addTextChangedListener(OTPTextWatcher(editTextOTP6))
 
         buttonVerify.setOnClickListener {
             val otp1 = editTextOTP1.text.toString().trim()
@@ -56,9 +59,11 @@ class OTPVerification : AppCompatActivity() {
 
             if (otp.length == 6) {
                 // Verify OTP
+                progressBar.visibility = ProgressBar.VISIBLE
                 verifyOTP(otp)
             } else {
                 Toast.makeText(this, "Please enter complete OTP", Toast.LENGTH_SHORT).show()
+                progressBar.visibility = View.GONE
             }
         }
     }
@@ -67,9 +72,11 @@ class OTPVerification : AppCompatActivity() {
         val credential = PhoneAuthProvider.getCredential(verificationId!!, otp)
         FirebaseAuth.getInstance().signInWithCredential(credential)
             .addOnCompleteListener { task ->
+                progressBar.visibility = ProgressBar.GONE
                 if (task.isSuccessful) {
                     // OTP verification successful
                     Toast.makeText(this, "OTP verified successfully", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = View.GONE
                     // Navigate to password reset activity
                     val intent = Intent(this, UpdatePassword::class.java)
                     startActivity(intent)
@@ -77,11 +84,12 @@ class OTPVerification : AppCompatActivity() {
                 } else {
                     // OTP verification failed
                     Toast.makeText(this, "Invalid OTP", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = View.GONE
                 }
             }
     }
 
-    private class OTPTextWatcher(private val currentEditText: EditText, private val nextEditText: EditText) :
+    private class OTPTextWatcher(private val nextEditText: EditText) :
         TextWatcher {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 

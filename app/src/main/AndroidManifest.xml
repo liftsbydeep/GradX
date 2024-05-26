@@ -33,9 +33,7 @@
         <activity
             android:name=".OTPVerification"
             android:exported="false" />
-        <activity
-            android:name=".ResetPasswordActivity"
-            android:exported="false" />
+
         <activity
             android:name=".Pass_reset"
             android:exported="false" />
