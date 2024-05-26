@@ -1,10 +1,16 @@
 package com.example.gradx
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.text.method.HideReturnsTransformationMethod
+import android.text.method.PasswordTransformationMethod
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
+import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +34,10 @@ class Login_Page : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginPageBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.pass.setupPasswordVisibilityToggle()
+
+        // Call setupPasswordVisibilityToggle() for cnfpasss EditText
+        binding.emailll.setupPasswordVisibilityToggle()
         progressBar = binding.progressBar
         auth = FirebaseAuth.getInstance()
 
@@ -35,7 +45,6 @@ class Login_Page : AppCompatActivity() {
             startActivity(Intent(this, Signup_Page::class.java))
         }
 
-        binding.password.isPasswordVisibilityToggleEnabled = true
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -52,7 +61,7 @@ class Login_Page : AppCompatActivity() {
             if (check()) {
                 progressBar.visibility = View.VISIBLE
                 val email = binding.emailll.text.toString().trim()
-                val password = binding.passs.text.toString().trim()
+                val password = binding.pass.text.toString().trim()
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(this) { task ->
                         progressBar.visibility = View.GONE
@@ -77,6 +86,27 @@ class Login_Page : AppCompatActivity() {
 
 
     }
+    @SuppressLint("ClickableViewAccessibility")
+    fun EditText.setupPasswordVisibilityToggle() {
+        val drawableEnd: Drawable? = compoundDrawablesRelative[2] // Assuming the drawableEnd is set at index 2
+
+        drawableEnd?.let {
+            setOnTouchListener { _, event ->
+                if (event.action == MotionEvent.ACTION_UP) {
+                    if (event.rawX >= (right - it.bounds.width())) {
+                        // Toggle password visibility
+                        val isVisible = transformationMethod == PasswordTransformationMethod.getInstance()
+                        val newTransformationMethod = if (isVisible) HideReturnsTransformationMethod.getInstance() else PasswordTransformationMethod.getInstance()
+                        setTransformationMethod(newTransformationMethod)
+                        setSelection(text.length)
+                        return@setOnTouchListener true
+                    }
+                }
+                false
+            }
+        }
+    }
+
     fun forgotPasswordClicked(view: View) {
         val intent = Intent(this, Pass_reset::class.java)
         startActivity(intent)
@@ -84,7 +114,7 @@ class Login_Page : AppCompatActivity() {
 
     private fun check(): Boolean {
         val email = binding.emailll.text.toString().trim()
-        val password = binding.passs.text.toString().trim()
+        val password = binding.pass.text.toString().trim()
         return email.isNotEmpty() && password.isNotEmpty()
     }
 

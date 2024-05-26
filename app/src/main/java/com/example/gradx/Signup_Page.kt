@@ -1,13 +1,19 @@
 package com.example.gradx
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.text.method.HideReturnsTransformationMethod
+import android.text.method.PasswordTransformationMethod
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -39,7 +45,10 @@ class Signup_Page : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySignupPageBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.passa.setupPasswordVisibilityToggle()
 
+        // Call setupPasswordVisibilityToggle() for cnfpasss EditText
+        binding.cnfpasss.setupPasswordVisibilityToggle()
         auth = Firebase.auth
         db = Firebase.firestore
         progressBar = binding.progressBar5
@@ -59,11 +68,11 @@ class Signup_Page : AppCompatActivity() {
         binding.signupbtn.setOnClickListener {
             if (check()) {
                 progressBar.visibility = View.VISIBLE
-                val Email = binding.emailll.text.toString().trim()
-                val Password = binding.passs.text.toString().trim()
-                val Name = binding.name.editText?.text.toString().trim()
-                val Pnumber = binding.phonenumber.editText?.text.toString().trim()
-                binding.cnfpass.editText?.text.toString().trim()
+                val Email = binding.emaillll.text.toString().trim()
+                val Password = binding.passa.text.toString().trim()
+                val Name = binding.name.text.toString().trim()
+                val Pnumber = binding.phonenumber.text.toString().trim()
+                binding.cnfpasss.text.toString().trim()
                 val user = hashMapOf(
                     "Name" to Name,
                     "Phone" to Pnumber,
@@ -106,12 +115,32 @@ class Signup_Page : AppCompatActivity() {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
     }
+    @SuppressLint("ClickableViewAccessibility")
+    fun EditText.setupPasswordVisibilityToggle() {
+        val drawableEnd: Drawable? = compoundDrawablesRelative[2] // Assuming the drawableEnd is set at index 2
+
+        drawableEnd?.let {
+            setOnTouchListener { _, event ->
+                if (event.action == MotionEvent.ACTION_UP) {
+                    if (event.rawX >= (right - it.bounds.width())) {
+                        // Toggle password visibility
+                        val isVisible = transformationMethod == PasswordTransformationMethod.getInstance()
+                        val newTransformationMethod = if (isVisible) HideReturnsTransformationMethod.getInstance() else PasswordTransformationMethod.getInstance()
+                        setTransformationMethod(newTransformationMethod)
+                        setSelection(text.length)
+                        return@setOnTouchListener true
+                    }
+                }
+                false
+            }
+        }
+    }
 
     private fun check(): Boolean {
-        val name = binding.name.editText?.text.toString().trim()
-        val pnumber = binding.phonenumber.editText?.text.toString().trim()
-        val email = binding.emailll.text.toString().trim()
-        val password = binding.passs.text.toString().trim()
+        val name = binding.name.text.toString().trim()
+        val pnumber = binding.phonenumber.text.toString().trim()
+        val email = binding.emaillll.text.toString().trim()
+        val password = binding.passa.text.toString().trim()
         val confirmPassword = binding.cnfpasss.text.toString().trim()
 
         return when {

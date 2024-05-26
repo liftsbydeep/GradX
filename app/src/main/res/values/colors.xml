@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="black">#FF000000</color>
+    <color name="grey">#6B000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="sea_green">#64C2BE</color>
     <color name="transparent">#00FFFFFF</color>
     <color name="blue">#0024FF</color>
     <color name="sea_green_light">#AAF1EE</color>
     <color name="red">#FF0000</color>
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC5</color>
+    <color name="colorFocusedBorder">#FF0000</color>
 </resources>

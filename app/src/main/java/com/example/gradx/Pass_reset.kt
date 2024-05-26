@@ -10,7 +10,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.gradx.databinding.ActivityPassResetBinding
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
 import java.util.concurrent.TimeUnit
 
@@ -29,30 +31,22 @@ class Pass_reset : AppCompatActivity() {
 
         val resetPasswordButton = binding.resetbtn
         progressBar = binding.progressBar2
-        // Initialize FirebaseAuth instance
         auth = FirebaseAuth.getInstance()
 
-        // Find email EditText
         emailEditText = binding.enteremail
-
-        // Find phone EditText
         phoneEditText = binding.pnum
 
-        // Set click listener for the reset password button
         resetPasswordButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val phone = phoneEditText.text.toString().trim()
 
             if (email.isNotEmpty()) {
                 progressBar.visibility = View.VISIBLE
-                // Reset password using email
                 sendPasswordResetEmail(email)
             } else if (phone.isNotEmpty()) {
-
-                // Reset password using phone number
                 if (isValidE164PhoneNumber(phone)) {
                     progressBar.visibility = View.VISIBLE
-                    sendVerificationCode(phone)
+                    startPhoneNumberVerification(phone)
                 } else {
                     Toast.makeText(
                         this,
@@ -84,41 +78,40 @@ class Pass_reset : AppCompatActivity() {
             }
     }
 
-    private fun sendVerificationCode(phoneNumber: String) {
-        PhoneAuthProvider.getInstance().verifyPhoneNumber(
-            phoneNumber,
-            60,
-            TimeUnit.SECONDS,
-            this,
-            object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    signInWithPhoneAuthCredential(credential)
-                }
+    private fun startPhoneNumberVerification(phoneNumber: String) {
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(this)
+            .setCallbacks(callbacks)
+            .build()
+        PhoneAuthProvider.verifyPhoneNumber(options)
+    }
 
-                override fun onVerificationFailed(e: FirebaseException) {
-                    Toast.makeText(
-                        this@Pass_reset,
-                        "Failed to send verification code",
-                        Toast.LENGTH_SHORT
+    private val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+        override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+            signInWithPhoneAuthCredential(credential)
+        }
 
-                    ).show()
-                    progressBar.visibility=View.GONE
-                }
+        override fun onVerificationFailed(e: FirebaseException) {
+            Toast.makeText(
+                this@Pass_reset,
+                "Failed to send verification code",
+                Toast.LENGTH_SHORT
+            ).show()
+            progressBar.visibility = View.GONE
+        }
 
-                override fun onCodeSent(
-                    verificationId: String,
-                    token: PhoneAuthProvider.ForceResendingToken
-                ) {
-                    this@Pass_reset.verificationId = verificationId
-                    progressBar.visibility = View.GONE
-                    // Proceed to OTP verification
-                    // You can navigate to a new activity for OTP verification or show a dialog here
-                    // For simplicity, let's assume you navigate to a new activity
-                    val intent = Intent(this@Pass_reset, com.example.gradx.OTPVerification::class.java)
-                    intent.putExtra("verificationId", verificationId)
-                    startActivity(intent)
-                }
-            })
+        override fun onCodeSent(
+            verificationId: String,
+            token: PhoneAuthProvider.ForceResendingToken
+        ) {
+            this@Pass_reset.verificationId = verificationId
+            progressBar.visibility = View.GONE
+            val intent = Intent(this@Pass_reset, OTPVerification::class.java)
+            intent.putExtra("verificationId", verificationId)
+            startActivity(intent)
+        }
     }
 
     private fun signInWithPhoneAuthCredential(credential: PhoneAuthCredential) {
@@ -126,24 +119,24 @@ class Pass_reset : AppCompatActivity() {
             .addOnCompleteListener { task ->
                 progressBar.visibility = View.GONE
                 if (task.isSuccessful) {
-                    // Phone authentication successful, allow user to reset password
                     Toast.makeText(this, "Phone authentication successful", Toast.LENGTH_SHORT)
                         .show()
                     progressBar.visibility = View.GONE
-                    // Navigate to password reset screen
                     finish()
                 } else {
-                    // Phone authentication failed
-                    Toast.makeText(this, "Phone authentication failed", Toast.LENGTH_SHORT).show()
+                    if (task.exception is FirebaseAuthInvalidCredentialsException) {
+                        Toast.makeText(this, "Invalid verification code", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        Toast.makeText(this, "Phone authentication failed", Toast.LENGTH_SHORT)
+                            .show()
+                    }
                     progressBar.visibility = View.GONE
                 }
             }
     }
 
-    fun isValidE164PhoneNumber(phoneNumber: String): Boolean {
-        // Check if the phone number starts with a '+' and contains only digits afterward
+    private fun isValidE164PhoneNumber(phoneNumber: String): Boolean {
         return phoneNumber.matches(Regex("^\\+[1-9]\\d{1,14}\$"))
     }
-
-
 }
