@@ -43,7 +43,8 @@ android {
 
 dependencies {
     implementation (libs.play.services.auth)
-
+    implementation (libs.org.jetbrains.kotlinx.kotlinx.coroutines.core)
+    implementation (libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -51,6 +52,12 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    //noinspection UseTomlInstead
+    implementation("com.google.firebase:firebase-analytics")
+    implementation(platform(libs.firebase.bom))
+
+
+        implementation (libs.integrity) // or the latest version
 
 
     testImplementation(libs.junit)

@@ -47,7 +47,7 @@ android:textColorHint="@color/grey"
 
     <Button
         android:id="@+id/login"
-        android:layout_width="150dp"
+        android:layout_width="350dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="63dp"
         android:backgroundTint="@color/sea_green"
@@ -83,7 +83,7 @@ android:textColorHint="@color/grey"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.318"
+        app:layout_constraintVertical_bias="0.287"
         app:srcCompat="@drawable/login_image_foreground" />
 
     <TextView

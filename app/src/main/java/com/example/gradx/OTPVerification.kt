@@ -4,101 +4,141 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.gradx.databinding.ActivityOtpverificationBinding
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class OTPVerification : AppCompatActivity() {
-    private lateinit var editTextOTP1: EditText
-    private lateinit var editTextOTP2: EditText
-    private lateinit var editTextOTP3: EditText
-    private lateinit var editTextOTP4: EditText
-    private lateinit var editTextOTP5: EditText
-    private lateinit var editTextOTP6: EditText
-    private lateinit var buttonVerify: Button
-    private lateinit var progressBar: ProgressBar
-
-    private var verificationId: String? = null
+    private lateinit var binding: ActivityOtpverificationBinding
+    private lateinit var auth: FirebaseAuth
+    private var storedVerificationId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        binding = ActivityOtpverificationBinding.inflate(layoutInflater)
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_otpverification)
+        setContentView(binding.root)
 
-        // Get verification ID from intent
-        verificationId = intent.getStringExtra("verificationId")
+        storedVerificationId = intent.getStringExtra("storedVerificationId")
+        auth = FirebaseAuth.getInstance()
 
-        editTextOTP1 = findViewById(R.id.editTextOTP1)
-        editTextOTP2 = findViewById(R.id.editTextOTP2)
-        editTextOTP3 = findViewById(R.id.editTextOTP3)
-        editTextOTP4 = findViewById(R.id.editTextOTP4)
-        editTextOTP5 = findViewById(R.id.editTextOTP5)
-        editTextOTP6 = findViewById(R.id.editTextOTP6)
-        buttonVerify = findViewById(R.id.buttonVerify)
-        progressBar = findViewById(R.id.progressBar3)
+//        initViews()
+        binding.progressBar3.visibility = View.INVISIBLE
 
-        // Add text change listeners to automatically shift cursor to next EditText
-        editTextOTP1.addTextChangedListener(OTPTextWatcher(editTextOTP2))
-        editTextOTP2.addTextChangedListener(OTPTextWatcher(editTextOTP3))
-        editTextOTP3.addTextChangedListener(OTPTextWatcher(editTextOTP4))
-        editTextOTP4.addTextChangedListener(OTPTextWatcher(editTextOTP5))
-        editTextOTP5.addTextChangedListener(OTPTextWatcher(editTextOTP6))
-
-        buttonVerify.setOnClickListener {
-            val otp1 = editTextOTP1.text.toString().trim()
-            val otp2 = editTextOTP2.text.toString().trim()
-            val otp3 = editTextOTP3.text.toString().trim()
-            val otp4 = editTextOTP4.text.toString().trim()
-            val otp5 = editTextOTP5.text.toString().trim()
-            val otp6 = editTextOTP6.text.toString().trim()
-            val otp = otp1 + otp2 + otp3 + otp4 + otp5 + otp6
-
+        binding.buttonVerify.setOnClickListener {
+            val otp = getEnteredOTP()
             if (otp.length == 6) {
-                // Verify OTP
-                progressBar.visibility = ProgressBar.VISIBLE
-                verifyOTP(otp)
+                binding.progressBar3.visibility = View.VISIBLE
+                verifyPhoneNumberWithCode(storedVerificationId, otp)
             } else {
-                Toast.makeText(this, "Please enter complete OTP", Toast.LENGTH_SHORT).show()
-                progressBar.visibility = View.GONE
+                Toast.makeText(this, "Please enter a valid 6-digit OTP", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        setupOtpInput()
+    }
+
+//    private fun initViews() {
+//        binding.apply {
+//            editTextOTP1 = findViewById(R.id.editTextOTP1)
+//            editTextOTP2 = findViewById(R.id.editTextOTP2)
+//            editTextOTP3 = findViewById(R.id.editTextOTP3)
+//            editTextOTP4 = findViewById(R.id.editTextOTP4)
+//            editTextOTP5 = findViewById(R.id.editTextOTP5)
+//            editTextOTP6 = findViewById(R.id.editTextOTP6)
+//            buttonVerify = findViewById(R.id.buttonVerify)
+//            progressBar = findViewById(R.id.progressBar3)
+//        }
+//    }
+
+    private fun getEnteredOTP(): String {
+        return binding.run {
+            editTextOTP1.text.toString().trim() +
+                    editTextOTP2.text.toString().trim() +
+                    editTextOTP3.text.toString().trim() +
+                    editTextOTP4.text.toString().trim() +
+                    editTextOTP5.text.toString().trim() +
+                    editTextOTP6.text.toString().trim()
+        }
+    }
+
+    private fun verifyPhoneNumberWithCode(verificationId: String?, code: String) {
+        verificationId?.let {
+            val credential = PhoneAuthProvider.getCredential(it, code)
+            signInWithPhoneAuthCredential(credential)
+        } ?: run {
+            binding.progressBar3.visibility = View.INVISIBLE
+            Toast.makeText(this, "Verification ID is null", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun signInWithPhoneAuthCredential(credential: PhoneAuthCredential) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = Tasks.await(auth.signInWithCredential(credential))
+                withContext(Dispatchers.Main) {
+                    binding.progressBar3.visibility = View.INVISIBLE
+                    if (result.user != null) {
+                        Log.d("success", "signInWithCredential:success")
+                        startActivity(Intent(this@OTPVerification, Landing_page::class.java))
+                        finish()
+                    } else {
+                        Log.w("failed", "signInWithCredential:failure")
+                        Toast.makeText(this@OTPVerification, "Authentication failed. Please try again.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar3.visibility = View.INVISIBLE
+                    handleException(e)
+                }
             }
         }
     }
 
-    private fun verifyOTP(otp: String) {
-        val credential = PhoneAuthProvider.getCredential(verificationId!!, otp)
-        FirebaseAuth.getInstance().signInWithCredential(credential)
-            .addOnCompleteListener { task ->
-                progressBar.visibility = ProgressBar.GONE
-                if (task.isSuccessful) {
-                    // OTP verification successful
-                    Toast.makeText(this, "OTP verified successfully", Toast.LENGTH_SHORT).show()
-                    progressBar.visibility = View.GONE
-                    // Navigate to password reset activity
-                    val intent = Intent(this, UpdatePassword::class.java)
-                    startActivity(intent)
-                    finish() // Finish OTP verification activity
-                } else {
-                    // OTP verification failed
-                    Toast.makeText(this, "Invalid OTP", Toast.LENGTH_SHORT).show()
-                    progressBar.visibility = View.GONE
-                }
+    private fun handleException(exception: Exception?) {
+        when (exception) {
+            is FirebaseAuthInvalidCredentialsException -> {
+                Toast.makeText(this, "Invalid OTP", Toast.LENGTH_LONG).show()
             }
+            else -> {
+                Toast.makeText(this, "Authentication failed. Please try again.", Toast.LENGTH_LONG).show()
+                exception?.let { Log.e("signInError", it.message.toString()) }
+            }
+        }
     }
 
-    private class OTPTextWatcher(private val nextEditText: EditText) :
-        TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+    private fun setupOtpInput() {
+        val editTexts = listOf(binding.editTextOTP1, binding.editTextOTP2, binding.editTextOTP3, binding.editTextOTP4, binding.editTextOTP5, binding.editTextOTP6)
 
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        for (i in editTexts.indices) {
+            editTexts[i].addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
-        override fun afterTextChanged(s: Editable?) {
-            if (s?.length == 1) {
-                nextEditText.requestFocus()
-            }
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+                override fun afterTextChanged(s: Editable?) {
+                    if (s?.length == 1) {
+                        if (i < editTexts.size - 1) {
+                            editTexts[i + 1].requestFocus()
+                        }
+                    } else if (s?.length == 0) {
+                        if (i > 0) {
+                            editTexts[i - 1].requestFocus()
+                        }
+                    }
+                }
+            })
         }
     }
 }

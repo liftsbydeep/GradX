@@ -26,5 +26,8 @@ class Landing_page : AppCompatActivity() {
             startActivity(Intent(this, Login_Page::class.java))
             finish() // Close Landing_page activity after sign out
         }
+        binding.button2.setOnClickListener {
+            startActivity(Intent(this@Landing_page,PhoneAuth::class.java))
+        }
     }
 }

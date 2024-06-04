@@ -3,63 +3,69 @@ package com.example.gradx
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.gradx.databinding.ActivityUpdatePasswordBinding
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class UpdatePassword : AppCompatActivity() {
-    private lateinit var newPasswordEditText: EditText
-    private lateinit var confirmPasswordEditText: EditText
-    private lateinit var changePasswordButton: Button
-    private lateinit var progressBar: ProgressBar
+    private lateinit var binding: ActivityUpdatePasswordBinding
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityUpdatePasswordBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        setContentView(R.layout.activity_update_password)
+        auth = FirebaseAuth.getInstance()
 
-        newPasswordEditText = findViewById(R.id.newpass)
-        confirmPasswordEditText = findViewById(R.id.cnfnewpass)
-        changePasswordButton = findViewById(R.id.changePasswordButton)
-        progressBar = findViewById(R.id.progressBar4)
-
-        changePasswordButton.setOnClickListener {
-            val newPassword = newPasswordEditText.text.toString().trim()
-            val confirmPassword = confirmPasswordEditText.text.toString().trim()
-
-            if (newPassword.isNotEmpty() && confirmPassword.isNotEmpty()) {
-                if (newPassword == confirmPassword) {
-                    progressBar.visibility = ProgressBar.VISIBLE
-                    updatePassword(newPassword)
-                } else {
-                    Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show()
-                    progressBar.visibility = View.GONE
-                }
+        binding.changePasswordButton.setOnClickListener {
+            val email = binding.cnfnewpass.text.toString().trim()
+            if (email.isNotEmpty()) {
+                startPasswordReset(email)
             } else {
-                Toast.makeText(this, "Please enter a new password and confirm it", Toast.LENGTH_SHORT).show()
-                progressBar.visibility = View.GONE
+                Toast.makeText(this@UpdatePassword, "Please enter your email address.", Toast.LENGTH_SHORT).show()
             }
         }
-
     }
 
-    private fun updatePassword(newPassword: String) {
-        val user = FirebaseAuth.getInstance().currentUser
-        user?.updatePassword(newPassword)
-            ?.addOnCompleteListener { task ->
-                progressBar.visibility = ProgressBar.GONE
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "Password updated successfully", Toast.LENGTH_SHORT).show()
-                    progressBar.visibility = View.GONE
-                    startActivity(Intent(this, Login_Page::class.java))
-                    finish() // Finish the activity after successful password change
-                } else {
-                    Toast.makeText(this, "Failed to update password", Toast.LENGTH_SHORT).show()
-                    progressBar.visibility = View.GONE
+    private fun startPasswordReset(email: String) {
+        // Show the progress bar on the main thread
+        binding.progressBar4.visibility = View.VISIBLE
+
+        // Perform the network operation on an IO thread
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                auth.sendPasswordResetEmail(email).await()
+                // Switch to the main thread to update the UI
+                withContext(Dispatchers.Main) {
+                    binding.progressBar4.visibility = View.GONE
+                    Toast.makeText(this@UpdatePassword, "Password reset email sent.", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@UpdatePassword, Login_Page::class.java))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar4.visibility = View.GONE
+                    handleException(e)
                 }
             }
+        }
+    }
+
+    private fun handleException(exception: Exception?) {
+        when (exception) {
+            is FirebaseAuthInvalidUserException -> {
+                Toast.makeText(this, "No user found with this email.", Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                Toast.makeText(this, "Failed to send password reset email.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

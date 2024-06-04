@@ -25,13 +25,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.tasks.Task
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class Signup_Page : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
@@ -68,53 +73,50 @@ class Signup_Page : AppCompatActivity() {
         binding.signupbtn.setOnClickListener {
             if (check()) {
                 progressBar.visibility = View.VISIBLE
-                val Email = binding.emaillll.text.toString().trim()
-                val Password = binding.passa.text.toString().trim()
-                val Name = binding.name.text.toString().trim()
-                val Pnumber = binding.phonenumber.text.toString().trim()
-                binding.cnfpasss.text.toString().trim()
+                val email = binding.emaillll.text.toString().trim()
+                val password = binding.passa.text.toString().trim()
+                val name = binding.name.text.toString().trim()
+                val phoneNumber = binding.phonenumber.text.toString().trim()
+
                 val user = hashMapOf(
-                    "Name" to Name,
-                    "Phone" to Pnumber,
-                    "Email" to Email
+                    "Name" to name,
+                    "Phone" to phoneNumber,
+                    "Email" to email
                 )
-                val Users = db.collection("USERS")
-                Users.whereEqualTo("Email", Email).get()
-                    .addOnSuccessListener { documents ->
+
+                // Call the createUserWithEmailAndPassword function
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val documents = db.collection("USERS").whereEqualTo("Email", email).get().await()
                         if (documents.isEmpty) {
-                            auth.createUserWithEmailAndPassword(Email, Password)
-                                .addOnCompleteListener(this) { task ->
-                                    progressBar.visibility = View.GONE
-                                    if (task.isSuccessful) {
-                                        Users.document(Email).set(user)
-                                        startActivity(Intent(this, Landing_page::class.java).putExtra("name", Name))
-                                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                                        finish()
-                                    } else {
-                                        showAlertDialog("Alert", task.exception?.message ?: "Unknown Error")
-                                    }
-                                }
+                            val isUserCreated = createUserWithEmailAndPassword(email, password, user)
+                            handleUserCreationResult(isUserCreated, name)
                         } else {
+                            withContext(Dispatchers.Main) {
+                                showAlertDialog("Alert", "User already exists")
+                            }
+                        }
+                    } catch (exception: Exception) {
+                        withContext(Dispatchers.Main) {
+                            showAlertDialog("Error", exception.message ?: "Unknown Error")
+                        }
+                    } finally {
+                        withContext(Dispatchers.Main) {
                             progressBar.visibility = View.GONE
-                            Toast.makeText(this, "User Already Registered", Toast.LENGTH_LONG).show()
-                            startActivity(Intent(this, Landing_page::class.java))
                         }
                     }
-                    .addOnFailureListener { exception ->
-                        progressBar.visibility = View.GONE
-                        showAlertDialog("Alert", exception.message ?: "Unknown Error")
-                    }
-            } else {
-                progressBar.visibility = View.GONE
-                Toast.makeText(this, "Wrong credentials", Toast.LENGTH_LONG).show()
+                }
             }
         }
+
+
 
         binding.backtologin.setOnClickListener {
             startActivity(Intent(this, Login_Page::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
     }
+
     @SuppressLint("ClickableViewAccessibility")
     fun EditText.setupPasswordVisibilityToggle() {
         val drawableEnd: Drawable? = compoundDrawablesRelative[2] // Assuming the drawableEnd is set at index 2
@@ -126,7 +128,7 @@ class Signup_Page : AppCompatActivity() {
                         // Toggle password visibility
                         val isVisible = transformationMethod == PasswordTransformationMethod.getInstance()
                         val newTransformationMethod = if (isVisible) HideReturnsTransformationMethod.getInstance() else PasswordTransformationMethod.getInstance()
-                        setTransformationMethod(newTransformationMethod)
+                        transformationMethod = newTransformationMethod
                         setSelection(text.length)
                         return@setOnTouchListener true
                     }
@@ -164,13 +166,7 @@ class Signup_Page : AppCompatActivity() {
     private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            handleGoogleSignInResult(task)
-        }
-    }
-
-    private fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>) {
-        if (task.isSuccessful) {
-            val account = task.result
+            val account = task.getResult(ApiException::class.java)
             if (account != null) {
                 firebaseAuthWithGoogle(account)
             }
@@ -202,6 +198,52 @@ class Signup_Page : AppCompatActivity() {
         }
     }
 
+    private suspend fun createUserWithEmailAndPassword(email: String, password: String, user: Map<String, String>): Boolean {
+        return try {
+            val documents = db.collection("USERS").whereEqualTo("Email", email).get().await()
+            if (documents.isEmpty) {
+               // db.disableNetwork().await() // Disable network to prevent interference with other clients
+                val task = auth.createUserWithEmailAndPassword(email, password).await()
+                if (task.user != null) {
+                    db.collection("USERS").document(email).set(user).await()
+                 //   db.enableNetwork().await() // Re-enable network after Firestore operation
+                    true
+                } else {
+                  //  db.enableNetwork().await() // Re-enable network in case of failure
+                    false
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    progressBar.visibility = View.GONE
+                    Toast.makeText(this@Signup_Page, "User Already Registered", Toast.LENGTH_LONG).show()
+                    startActivity(Intent(this@Signup_Page, Login_Page::class.java))
+                }
+                false
+            }
+        } catch (exception: Exception) {
+            withContext(Dispatchers.Main) {
+                progressBar.visibility = View.GONE
+                showAlertDialog("Alert", exception.message ?: "Unknown Error")
+
+            }
+         //   db.enableNetwork().await()    // Re-enable network in case of exception
+            false
+        }
+    }
+
+
+    private suspend fun handleUserCreationResult(isSuccessful: Boolean, name: String) {
+        withContext(Dispatchers.Main) {
+            progressBar.visibility = View.GONE
+            if (isSuccessful) {
+                startActivity(Intent(this@Signup_Page, Landing_page::class.java).putExtra("name", name))
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                finish()
+            } else {
+                showAlertDialog("Alert", "User registration failed. Please try again.")
+            }
+        }
+    }
 
     private fun Context.showAlertDialog(title: String, message: String) {
         // Inflate the custom layout/view

@@ -23,6 +23,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class Login_Page : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
@@ -35,8 +39,6 @@ class Login_Page : AppCompatActivity() {
         binding = ActivityLoginPageBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.pass.setupPasswordVisibilityToggle()
-
-        // Call setupPasswordVisibilityToggle() for cnfpasss EditText
         binding.emailll.setupPasswordVisibilityToggle()
         progressBar = binding.progressBar
         auth = FirebaseAuth.getInstance()
@@ -44,7 +46,6 @@ class Login_Page : AppCompatActivity() {
         binding.signup.setOnClickListener {
             startActivity(Intent(this, Signup_Page::class.java))
         }
-
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -62,18 +63,9 @@ class Login_Page : AppCompatActivity() {
                 progressBar.visibility = View.VISIBLE
                 val email = binding.emailll.text.toString().trim()
                 val password = binding.pass.text.toString().trim()
-                auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this) { task ->
-                        progressBar.visibility = View.GONE
-                        if (task.isSuccessful) {
-                            startActivity(
-                                Intent(this, Landing_page::class.java).putExtra("email", email)
-                            )
-                            finish()
-                        } else {
-                            Toast.makeText(this, "Wrong credentials", Toast.LENGTH_LONG).show()
-                        }
-                    }
+                CoroutineScope(Dispatchers.Main).launch {
+                    handleEmailPasswordSignIn(email, password)
+                }
             } else {
                 Toast.makeText(this, "All fields must be filled!", Toast.LENGTH_LONG).show()
             }
@@ -83,18 +75,16 @@ class Login_Page : AppCompatActivity() {
             startActivity(Intent(this, Signup_Page::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
-
-
     }
+
     @SuppressLint("ClickableViewAccessibility")
     fun EditText.setupPasswordVisibilityToggle() {
-        val drawableEnd: Drawable? = compoundDrawablesRelative[2] // Assuming the drawableEnd is set at index 2
+        val drawableEnd: Drawable? = compoundDrawablesRelative[2]
 
         drawableEnd?.let {
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_UP) {
                     if (event.rawX >= (right - it.bounds.width())) {
-                        // Toggle password visibility
                         val isVisible = transformationMethod == PasswordTransformationMethod.getInstance()
                         val newTransformationMethod = if (isVisible) HideReturnsTransformationMethod.getInstance() else PasswordTransformationMethod.getInstance()
                         setTransformationMethod(newTransformationMethod)
@@ -108,7 +98,7 @@ class Login_Page : AppCompatActivity() {
     }
 
     fun forgotPasswordClicked(view: View) {
-        val intent = Intent(this, Pass_reset::class.java)
+        val intent = Intent(this, UpdatePassword::class.java)
         startActivity(intent)
     }
 
@@ -132,36 +122,44 @@ class Login_Page : AppCompatActivity() {
         }
 
     private fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>) {
-        if (task.isSuccessful) {
-            val account = task.result
-            if (account != null) {
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val account = task.await()
                 firebaseAuthWithGoogle(account)
+            } catch (e: Exception) {
+                Toast.makeText(this@Login_Page, "Google sign-in failed.", Toast.LENGTH_SHORT).show()
             }
-        } else {
-            Toast.makeText(this, "Google sign-in failed.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
+    private suspend fun handleEmailPasswordSignIn(email: String, password: String) {
+        try {
+            auth.signInWithEmailAndPassword(email, password).await()
+            progressBar.visibility = View.GONE
+            startActivity(Intent(this, Landing_page::class.java).putExtra("email", email))
+            finish()
+        } catch (e: Exception) {
+            progressBar.visibility = View.GONE
+            Toast.makeText(this, "Wrong credentials", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private suspend fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
         Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: starting")
         val credentials = GoogleAuthProvider.getCredential(account.idToken, null)
-        auth.signInWithCredential(credentials)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: success")
-                    startActivity(Intent(this, Landing_page::class.java))
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                    finish()
-
-                } else {
-                    Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: failed")
-                    Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
-                }
-            }
+        try {
+            auth.signInWithCredential(credentials).await()
+            Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: success")
+            startActivity(Intent(this, Landing_page::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            finish()
+        } catch (e: Exception) {
+            Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: failed")
+            Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+        }
     }
+
     fun resetPasswordClicked(view: View) {
-
-
         val email = binding.emailll.text.toString().trim()
 
         if (email.isEmpty()) {
@@ -169,17 +167,14 @@ class Login_Page : AppCompatActivity() {
             return
         }
 
-        auth.sendPasswordResetEmail(email)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "Password reset email sent", Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    Toast.makeText(this, "Failed to send password reset email", Toast.LENGTH_SHORT)
-                        .show()
-                }
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                auth.sendPasswordResetEmail(email).await()
+                Toast.makeText(this@Login_Page, "Password reset email sent", Toast.LENGTH_SHORT).show()
+                finish()
+            } catch (e: Exception) {
+                Toast.makeText(this@Login_Page, "Failed to send password reset email", Toast.LENGTH_SHORT).show()
             }
-
-
+        }
     }
 }

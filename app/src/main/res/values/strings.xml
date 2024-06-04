@@ -23,4 +23,7 @@
     <string name="email">Email</string>
     <string name="todo">TODO</string>
     <string name="tod">TODO</string>
+    <string name="send_otp">Send OTP</string>
+    <string name="enter_number">Enter Number</string>
+    <string name="verify_phone_number_to_start_messaging">Verify Phone Number to start messaging</string>
 </resources>
