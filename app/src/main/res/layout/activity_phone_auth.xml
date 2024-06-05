@@ -11,22 +11,22 @@
 
     <EditText
         android:id="@+id/editTextPhone"
-        android:layout_width="350dp"
-        android:layout_height="wrap_content"
+        android:layout_width="276dp"
+        android:layout_height="48dp"
         android:layout_marginTop="21dp"
+        android:autofillHints=""
         android:background="@drawable/boxbg"
-        android:drawableStart="@drawable/baseline_phone_24"
+
         android:drawablePadding="10dp"
         android:ems="10"
         android:hint="@string/enter_number"
         android:inputType="phone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.491"
+        app:layout_constraintHorizontal_bias="0.674"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView6"
-        app:layout_constraintVertical_bias="0.0"
-        android:autofillHints="" />
+        app:layout_constraintVertical_bias="0.0" />
 
     <Button
         android:id="@+id/button3"
@@ -90,26 +90,25 @@
     <ImageView
         android:id="@+id/imageView14"
         android:layout_width="414dp"
-        android:layout_height="146dp"
+        android:layout_height="143dp"
+        android:src="@drawable/top_foreground"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        android:src="@drawable/top_foreground" />
+        app:layout_constraintVertical_bias="0.0" />
 
     <ImageView
         android:id="@+id/imageView15"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="34dp"
-        app:layout_constraintBottom_toTopOf="@+id/imageView13"
+        android:src="@drawable/plane_foreground"
+        app:layout_constraintBottom_toBottomOf="@+id/textView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.976"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0"
-        android:src="@drawable/plane_foreground" />
+        app:layout_constraintTop_toTopOf="@+id/textView"
+        app:layout_constraintVertical_bias="1.0" />
 
     <ProgressBar
         android:id="@+id/progressBar2"
@@ -125,4 +124,34 @@ android:layout_width="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="35dp"
+        android:layout_height="48dp"
+        android:background="@drawable/boxbg"
+        android:gravity="center"
+        android:padding="1dp"
+
+        android:text="+91"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/editTextPhone"
+        app:layout_constraintEnd_toStartOf="@+id/editTextPhone"
+        app:layout_constraintHorizontal_bias="0.875"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/editTextPhone"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <!--    <TextView-->
+<!--        android:id="@+id/textView12"-->
+<!--        android:layout_width="0.5dp"-->
+<!--        android:layout_height="30dp"-->
+<!--        android:background="@color/grey"-->
+<!--        android:gravity="center"-->
+<!--        app:layout_constraintBottom_toBottomOf="@+id/editTextPhone"-->
+<!--        app:layout_constraintEnd_toEndOf="@+id/editTextPhone"-->
+<!--        app:layout_constraintHorizontal_bias="0.106"-->
+<!--        app:layout_constraintStart_toEndOf="@+id/textView8"-->
+<!--        app:layout_constraintTop_toTopOf="@+id/textView8" />-->
 </androidx.constraintlayout.widget.ConstraintLayout>

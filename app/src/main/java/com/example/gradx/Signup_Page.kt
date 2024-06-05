@@ -217,6 +217,7 @@ class Signup_Page : AppCompatActivity() {
                     progressBar.visibility = View.GONE
                     Toast.makeText(this@Signup_Page, "User Already Registered", Toast.LENGTH_LONG).show()
                     startActivity(Intent(this@Signup_Page, Login_Page::class.java))
+
                 }
                 false
             }
