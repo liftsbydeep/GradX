@@ -5,11 +5,14 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.gradx.databinding.ActivityLandingPageBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class LandingPage : AppCompatActivity() {
     private lateinit var binding: ActivityLandingPageBinding
@@ -25,12 +28,12 @@ class LandingPage : AppCompatActivity() {
         auth = Firebase.auth
         firestore = FirebaseFirestore.getInstance()
 
-        val user = auth.currentUser
-        if (user != null) {
-            binding.email.text = user.email // Populate the email field
-            loadUserData(user.uid)
+        val email = intent.getStringExtra("USER_EMAIL")
+        if (email != null) {
+            binding.email.text = email // Populate the email field
+            loadUserData(email)
         } else {
-            // User is not logged in, redirect to login page.
+            // User email is not available, redirect to login page.
             startActivity(Intent(this, Login_Page::class.java))
             finish()
         }
@@ -46,25 +49,26 @@ class LandingPage : AppCompatActivity() {
         }
     }
 
-    private fun loadUserData(userId: String) {
-        firestore.collection("USERS").document(userId).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
+    private fun loadUserData(email: String) {
+        lifecycleScope.launch {
+            try {
+                val documents = firestore.collection("USERS").whereEqualTo("Email", email).get().await()
+                if (!documents.isEmpty) {
+                    val document = documents.documents[0]
                     val name = document.getString("Name")
 
                     if (name != null) {
-                        // Display user name in text field
                         binding.name.text = name
                     } else {
-                        Log.d("LandingPage", "No name found for user ID: $userId")
+                        Log.d("LandingPage", "No name found for email: $email")
                     }
                 } else {
-                    Log.d("LandingPage", "No user found with ID: $userId")
+                    Log.d("LandingPage", "No user found with email: $email")
                 }
-            }
-            .addOnFailureListener { exception ->
+            } catch (exception: Exception) {
                 // Handle any errors
                 Log.e("LandingPage", "Error getting user data: $exception")
             }
+        }
     }
 }
