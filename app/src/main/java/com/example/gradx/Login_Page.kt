@@ -7,7 +7,6 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.EditText
@@ -43,8 +42,12 @@ class Login_Page : AppCompatActivity() {
         progressBar = binding.progressBar
         auth = FirebaseAuth.getInstance()
 
-        binding.signup.setOnClickListener {
-            startActivity(Intent(this, Signup_Page::class.java))
+        // If the user is already signed in, go to the landing page
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, LandingPage::class.java).apply {
+                putExtra("USER_EMAIL", auth.currentUser?.email)
+            })
+            finish()
         }
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -63,6 +66,7 @@ class Login_Page : AppCompatActivity() {
                 progressBar.visibility = View.VISIBLE
                 val email = binding.emailll.text.toString().trim()
                 val password = binding.pass.text.toString().trim()
+
                 CoroutineScope(Dispatchers.Main).launch {
                     handleEmailPasswordSignIn(email, password)
                 }
@@ -87,7 +91,7 @@ class Login_Page : AppCompatActivity() {
                     if (event.rawX >= (right - it.bounds.width())) {
                         val isVisible = transformationMethod == PasswordTransformationMethod.getInstance()
                         val newTransformationMethod = if (isVisible) HideReturnsTransformationMethod.getInstance() else PasswordTransformationMethod.getInstance()
-                        setTransformationMethod(newTransformationMethod)
+                        transformationMethod = newTransformationMethod
                         setSelection(text.length)
                         return@setOnTouchListener true
                     }
@@ -95,11 +99,6 @@ class Login_Page : AppCompatActivity() {
                 false
             }
         }
-    }
-
-    fun forgotPasswordClicked(view: View) {
-        val intent = Intent(this, UpdatePassword::class.java)
-        startActivity(intent)
     }
 
     private fun check(): Boolean {
@@ -136,7 +135,10 @@ class Login_Page : AppCompatActivity() {
         try {
             auth.signInWithEmailAndPassword(email, password).await()
             progressBar.visibility = View.GONE
-            startActivity(Intent(this, Landing_page::class.java).putExtra("email", email))
+
+            startActivity(Intent(this, LandingPage::class.java).apply {
+                putExtra("USER_EMAIL", email)
+            })
             finish()
         } catch (e: Exception) {
             progressBar.visibility = View.GONE
@@ -145,36 +147,17 @@ class Login_Page : AppCompatActivity() {
     }
 
     private suspend fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
-        Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: starting")
         val credentials = GoogleAuthProvider.getCredential(account.idToken, null)
         try {
             auth.signInWithCredential(credentials).await()
-            Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: success")
-            startActivity(Intent(this, Landing_page::class.java))
+            startActivity(Intent(this, LandingPage::class.java).apply {
+                putExtra("USER_EMAIL", account.email)
+            })
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
         } catch (e: Exception) {
-            Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: failed")
             Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun resetPasswordClicked(view: View) {
-        val email = binding.emailll.text.toString().trim()
-
-        if (email.isEmpty()) {
-            Toast.makeText(this, "Please enter your email address", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                auth.sendPasswordResetEmail(email).await()
-                Toast.makeText(this@Login_Page, "Password reset email sent", Toast.LENGTH_SHORT).show()
-                finish()
-            } catch (e: Exception) {
-                Toast.makeText(this@Login_Page, "Failed to send password reset email", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 }

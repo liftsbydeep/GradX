@@ -90,7 +90,7 @@ class OTPVerification : AppCompatActivity() {
                     binding.progressBar3.visibility = View.INVISIBLE
                     if (result.user != null) {
                         Log.d("success", "signInWithCredential:success")
-                        startActivity(Intent(this@OTPVerification, Landing_page::class.java))
+                        startActivity(Intent(this@OTPVerification, LandingPage::class.java))
                         finish()
                     } else {
                         Log.w("failed", "signInWithCredential:failure")

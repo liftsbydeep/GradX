@@ -42,7 +42,6 @@ class Signup_Page : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private lateinit var binding: ActivitySignupPageBinding
-
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var progressBar: ProgressBar
 
@@ -56,6 +55,7 @@ class Signup_Page : AppCompatActivity() {
         binding.cnfpasss.setupPasswordVisibilityToggle()
         auth = Firebase.auth
         db = Firebase.firestore
+
         progressBar = binding.progressBar5
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -71,6 +71,7 @@ class Signup_Page : AppCompatActivity() {
         }
 
         binding.signupbtn.setOnClickListener {
+
             if (check()) {
                 progressBar.visibility = View.VISIBLE
                 val email = binding.emaillll.text.toString().trim()
@@ -108,8 +109,6 @@ class Signup_Page : AppCompatActivity() {
                 }
             }
         }
-
-
 
         binding.backtologin.setOnClickListener {
             startActivity(Intent(this, Login_Page::class.java))
@@ -176,68 +175,60 @@ class Signup_Page : AppCompatActivity() {
     }
 
     private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
-        Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: starting")
+        Log.d("Signup_Page", "firebaseAuthWithGoogle: starting")
         val idToken = account.idToken
         if (idToken != null) {
             val credentials = GoogleAuthProvider.getCredential(idToken, null)
             auth.signInWithCredential(credentials)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
-                        Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: success")
-                        startActivity(Intent(this, Landing_page::class.java))
+                        Log.d("Signup_Page", "firebaseAuthWithGoogle: success")
+                        val user = auth.currentUser
+                        startActivity(Intent(this, LandingPage::class.java).apply {
+                            if (user != null) {
+                                putExtra("USER_NAME", user.displayName)
+                            }
+                        })
+
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                         finish()
                     } else {
-                        Log.d("LoginScreenActivity", "firebaseAuthWithGoogle: failed")
+                        Log.d("Signup_Page", "firebaseAuthWithGoogle: failed")
                         Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
                     }
                 }
         } else {
             // Handle case where ID token is null
-            Log.e("LoginScreenActivity", "ID token is null")
+            Log.e("Signup_Page", "ID token is null")
         }
     }
 
     private suspend fun createUserWithEmailAndPassword(email: String, password: String, user: Map<String, String>): Boolean {
         return try {
-            val documents = db.collection("USERS").whereEqualTo("Email", email).get().await()
-            if (documents.isEmpty) {
-               // db.disableNetwork().await() // Disable network to prevent interference with other clients
-                val task = auth.createUserWithEmailAndPassword(email, password).await()
-                if (task.user != null) {
-                    db.collection("USERS").document(email).set(user).await()
-                 //   db.enableNetwork().await() // Re-enable network after Firestore operation
-                    true
-                } else {
-                  //  db.enableNetwork().await() // Re-enable network in case of failure
-                    false
-                }
+            val task = auth.createUserWithEmailAndPassword(email, password).await()
+            if (task.user != null) {
+                db.collection("USERS").document(email).set(user).await()
+                true
             } else {
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(this@Signup_Page, "User Already Registered", Toast.LENGTH_LONG).show()
-                    startActivity(Intent(this@Signup_Page, Login_Page::class.java))
-
-                }
                 false
             }
         } catch (exception: Exception) {
             withContext(Dispatchers.Main) {
                 progressBar.visibility = View.GONE
                 showAlertDialog("Alert", exception.message ?: "Unknown Error")
-
             }
-         //   db.enableNetwork().await()    // Re-enable network in case of exception
             false
         }
     }
-
 
     private suspend fun handleUserCreationResult(isSuccessful: Boolean, name: String) {
         withContext(Dispatchers.Main) {
             progressBar.visibility = View.GONE
             if (isSuccessful) {
-                startActivity(Intent(this@Signup_Page, Landing_page::class.java).putExtra("name", name))
+                startActivity(Intent(this@Signup_Page, LandingPage::class.java).apply {
+                    putExtra("USER_NAME", name)
+                })
+
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                 finish()
             } else {
@@ -245,6 +236,7 @@ class Signup_Page : AppCompatActivity() {
             }
         }
     }
+
 
     private fun Context.showAlertDialog(title: String, message: String) {
         // Inflate the custom layout/view

@@ -211,6 +211,7 @@
         android:layout_width="350dp"
         android:layout_height="wrap_content"
         android:ems="10"
+        android:maxLength="15"
         android:inputType="textPassword"
         android:background="@drawable/boxbg"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -233,6 +234,7 @@
         android:ems="10"
         android:background="@drawable/boxbg"
         android:inputType="textPassword"
+
         android:drawableEnd="@drawable/baseline_remove_red_eye_24"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

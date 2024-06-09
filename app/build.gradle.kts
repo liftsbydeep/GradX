@@ -10,6 +10,7 @@ android {
     namespace = "com.example.gradx"
     compileSdk = 34
 
+
     defaultConfig {
         applicationId = "com.example.gradx"
         minSdk = 27
@@ -57,7 +58,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
 
 
-        implementation (libs.integrity) // or the latest version
+        implementation (libs.integrity)
+    implementation(libs.play.services.cast.framework) // or the latest version
 
 
     testImplementation(libs.junit)
