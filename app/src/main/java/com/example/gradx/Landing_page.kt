@@ -1,23 +1,21 @@
 package com.example.gradx
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.Fragment
 import com.example.gradx.databinding.ActivityLandingPageBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class LandingPage : AppCompatActivity() {
     private lateinit var binding: ActivityLandingPageBinding
     private lateinit var auth: FirebaseAuth
-    private lateinit var firestore: FirebaseFirestore
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,49 +24,51 @@ class LandingPage : AppCompatActivity() {
         setContentView(binding.root)
 
         auth = Firebase.auth
-        firestore = FirebaseFirestore.getInstance()
+        sharedPreferences = getSharedPreferences("GradxPrefs", Context.MODE_PRIVATE)
 
-        val email = intent.getStringExtra("USER_EMAIL")
-        if (email != null) {
-            binding.email.text = email // Populate the email field
-            loadUserData(email)
-        } else {
-            // User email is not available, redirect to login page.
-            startActivity(Intent(this, Login_Page::class.java))
-            finish()
+        // Check login status
+        checkLoginStatus()
+
+        // Setup bottom navigation
+        binding.bottomNavigationView.setOnItemSelectedListener {
+            when (it.itemId) {
+                R.id.home -> FragmentHandler(home())
+                R.id.connect -> FragmentHandler(connect())
+                R.id.profile -> FragmentHandler(Profile())
+                else -> {
+                    showFragment(home())
+                }
+            }
+            true
         }
 
-        binding.logout.setOnClickListener {
-            auth.signOut()
-            startActivity(Intent(this@LandingPage, Login_Page::class.java))
-            finish()
-        }
-
-        binding.button2.setOnClickListener {
-            startActivity(Intent(this@LandingPage, PhoneAuth::class.java))
+        // Show the home fragment by default
+        if (savedInstanceState == null) {
+            binding.bottomNavigationView.selectedItemId = R.id.home
         }
     }
 
-    private fun loadUserData(email: String) {
-        lifecycleScope.launch {
-            try {
-                val documents = firestore.collection("USERS").whereEqualTo("Email", email).get().await()
-                if (!documents.isEmpty) {
-                    val document = documents.documents[0]
-                    val name = document.getString("Name")
-
-                    if (name != null) {
-                        binding.name.text = name
-                    } else {
-                        Log.d("LandingPage", "No name found for email: $email")
-                    }
-                } else {
-                    Log.d("LandingPage", "No user found with email: $email")
-                }
-            } catch (exception: Exception) {
-                // Handle any errors
-                Log.e("LandingPage", "Error getting user data: $exception")
-            }
+    private fun checkLoginStatus() {
+        val isLoggedIn = sharedPreferences.getBoolean("IS_LOGGED_IN", false)
+        if (!isLoggedIn || auth.currentUser == null) {
+            // User is not logged in, redirect to login page
+            startActivity(Intent(this, Login_Page::class.java))
+            finish()
         }
+    }
+
+    private fun FragmentHandler(fragment: Fragment) {
+        val fragmentManager = supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        fragmentTransaction.replace(R.id.frameLayout, fragment)
+        fragmentTransaction.commit()
+    }
+
+    private fun showFragment(fragment: Fragment): Boolean {
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.frameLayout, fragment)
+            .commit()
+        return true
     }
 }

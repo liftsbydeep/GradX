@@ -2,7 +2,9 @@ package com.example.gradx
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
@@ -32,6 +34,7 @@ class Login_Page : AppCompatActivity() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var progressBar: ProgressBar
     private lateinit var binding: ActivityLoginPageBinding
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,10 +45,13 @@ class Login_Page : AppCompatActivity() {
         progressBar = binding.progressBar
         auth = FirebaseAuth.getInstance()
 
+        // Initialize SharedPreferences
+        sharedPreferences = getSharedPreferences("GradxPrefs", Context.MODE_PRIVATE)
+
         // If the user is already signed in, go to the landing page
-        if (auth.currentUser != null) {
+        if (isUserLoggedIn()) {
             startActivity(Intent(this, LandingPage::class.java).apply {
-                putExtra("USER_EMAIL", auth.currentUser?.email)
+                putExtra("USER_EMAIL", sharedPreferences.getString("USER_EMAIL", null))
             })
             finish()
         }
@@ -136,6 +142,8 @@ class Login_Page : AppCompatActivity() {
             auth.signInWithEmailAndPassword(email, password).await()
             progressBar.visibility = View.GONE
 
+            saveUserLoginState(email)
+
             startActivity(Intent(this, LandingPage::class.java).apply {
                 putExtra("USER_EMAIL", email)
             })
@@ -150,6 +158,9 @@ class Login_Page : AppCompatActivity() {
         val credentials = GoogleAuthProvider.getCredential(account.idToken, null)
         try {
             auth.signInWithCredential(credentials).await()
+
+            saveUserLoginState(account.email)
+
             startActivity(Intent(this, LandingPage::class.java).apply {
                 putExtra("USER_EMAIL", account.email)
             })
@@ -158,6 +169,17 @@ class Login_Page : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun saveUserLoginState(email: String?) {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("IS_LOGGED_IN", true)
+        editor.putString("USER_EMAIL", email)
+        editor.apply()
+    }
+
+    private fun isUserLoggedIn(): Boolean {
+        return sharedPreferences.getBoolean("IS_LOGGED_IN", false)
     }
 
 }

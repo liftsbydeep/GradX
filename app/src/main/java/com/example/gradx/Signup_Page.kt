@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
@@ -17,6 +18,7 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -44,19 +46,21 @@ class Signup_Page : AppCompatActivity() {
     private lateinit var binding: ActivitySignupPageBinding
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var progressBar: ProgressBar
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySignupPageBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.passa.setupPasswordVisibilityToggle()
-
-        // Call setupPasswordVisibilityToggle() for cnfpasss EditText
         binding.cnfpasss.setupPasswordVisibilityToggle()
         auth = Firebase.auth
         db = Firebase.firestore
 
         progressBar = binding.progressBar5
+
+        // Initialize SharedPreferences
+        sharedPreferences = getSharedPreferences("GradxPrefs", Context.MODE_PRIVATE)
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -71,7 +75,6 @@ class Signup_Page : AppCompatActivity() {
         }
 
         binding.signupbtn.setOnClickListener {
-
             if (check()) {
                 progressBar.visibility = View.VISIBLE
                 val email = binding.emaillll.text.toString().trim()
@@ -85,13 +88,12 @@ class Signup_Page : AppCompatActivity() {
                     "Email" to email
                 )
 
-                // Call the createUserWithEmailAndPassword function
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         val documents = db.collection("USERS").whereEqualTo("Email", email).get().await()
                         if (documents.isEmpty) {
                             val isUserCreated = createUserWithEmailAndPassword(email, password, user)
-                            handleUserCreationResult(isUserCreated, name)
+                            handleUserCreationResult(isUserCreated, email, name)
                         } else {
                             withContext(Dispatchers.Main) {
                                 showAlertDialog("Alert", "User already exists")
@@ -118,13 +120,12 @@ class Signup_Page : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     fun EditText.setupPasswordVisibilityToggle() {
-        val drawableEnd: Drawable? = compoundDrawablesRelative[2] // Assuming the drawableEnd is set at index 2
+        val drawableEnd: Drawable? = compoundDrawablesRelative[2]
 
         drawableEnd?.let {
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_UP) {
                     if (event.rawX >= (right - it.bounds.width())) {
-                        // Toggle password visibility
                         val isVisible = transformationMethod == PasswordTransformationMethod.getInstance()
                         val newTransformationMethod = if (isVisible) HideReturnsTransformationMethod.getInstance() else PasswordTransformationMethod.getInstance()
                         transformationMethod = newTransformationMethod
@@ -162,12 +163,16 @@ class Signup_Page : AppCompatActivity() {
         launcher.launch(signInIntent)
     }
 
-    private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            val account = task.getResult(ApiException::class.java)
-            if (account != null) {
-                firebaseAuthWithGoogle(account)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                if (account != null) {
+                    firebaseAuthWithGoogle(account)
+                }
+            } catch (e: ApiException) {
+                Toast.makeText(this, "Google sign-in failed.", Toast.LENGTH_SHORT).show()
             }
         } else {
             Toast.makeText(this, "Google sign-in failed.", Toast.LENGTH_SHORT).show()
@@ -184,6 +189,8 @@ class Signup_Page : AppCompatActivity() {
                     if (task.isSuccessful) {
                         Log.d("Signup_Page", "firebaseAuthWithGoogle: success")
                         val user = auth.currentUser
+                        saveUserLoginState(user?.email)
+
                         startActivity(Intent(this, LandingPage::class.java).apply {
                             if (user != null) {
                                 putExtra("USER_NAME", user.displayName)
@@ -198,7 +205,6 @@ class Signup_Page : AppCompatActivity() {
                     }
                 }
         } else {
-            // Handle case where ID token is null
             Log.e("Signup_Page", "ID token is null")
         }
     }
@@ -221,10 +227,12 @@ class Signup_Page : AppCompatActivity() {
         }
     }
 
-    private suspend fun handleUserCreationResult(isSuccessful: Boolean, name: String) {
+    private suspend fun handleUserCreationResult(isSuccessful: Boolean, email: String, name: String) {
         withContext(Dispatchers.Main) {
             progressBar.visibility = View.GONE
             if (isSuccessful) {
+                saveUserLoginState(email)
+
                 startActivity(Intent(this@Signup_Page, LandingPage::class.java).apply {
                     putExtra("USER_NAME", name)
                 })
@@ -237,32 +245,32 @@ class Signup_Page : AppCompatActivity() {
         }
     }
 
+    private fun saveUserLoginState(email: String?) {
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("IS_LOGGED_IN", true)
+        editor.putString("USER_EMAIL", email)
+        editor.apply()
+    }
 
     private fun Context.showAlertDialog(title: String, message: String) {
-        // Inflate the custom layout/view
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.custom_dialog_box, null)
 
-        // Find views in the custom layout
         val dtitle = view.findViewById<TextView>(R.id.dialogTitle)
         val dmessage = view.findViewById<TextView>(R.id.dialogMessage)
         val dbtn = view.findViewById<Button>(R.id.dialogButton)
 
-        // Set the text for title and message
         dtitle.text = title
         dmessage.text = message
 
-        // Create the AlertDialog with the custom view
         val builder = AlertDialog.Builder(this)
         builder.setView(view)
         val dialog = builder.create()
 
-        // Set click listener for the button
         dbtn.setOnClickListener {
-            dialog.dismiss() // Dismiss the dialog when button is clicked
+            dialog.dismiss()
         }
 
-        // Show the dialog
         dialog.show()
     }
 }
