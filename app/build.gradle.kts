@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 
 }
 
@@ -59,7 +60,8 @@ dependencies {
 
 
         implementation (libs.integrity)
-    implementation(libs.play.services.cast.framework) // or the latest version
+    implementation(libs.play.services.cast.framework)
+    implementation(libs.firebase.crashlytics) // or the latest version
 
 
     testImplementation(libs.junit)
