@@ -180,14 +180,14 @@ class Signup_Page : AppCompatActivity() {
     }
 
     private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
-        Log.d("Signup_Page", "firebaseAuthWithGoogle: starting")
+        Log.d("com.example.gradx.Signup_Page", "firebaseAuthWithGoogle: starting")
         val idToken = account.idToken
         if (idToken != null) {
             val credentials = GoogleAuthProvider.getCredential(idToken, null)
             auth.signInWithCredential(credentials)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
-                        Log.d("Signup_Page", "firebaseAuthWithGoogle: success")
+                        Log.d("com.example.gradx.Signup_Page", "firebaseAuthWithGoogle: success")
                         val user = auth.currentUser
                         saveUserLoginState(user?.email)
 
@@ -200,12 +200,12 @@ class Signup_Page : AppCompatActivity() {
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                         finish()
                     } else {
-                        Log.d("Signup_Page", "firebaseAuthWithGoogle: failed")
+                        Log.d("com.example.gradx.Signup_Page", "firebaseAuthWithGoogle: failed")
                         Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
                     }
                 }
         } else {
-            Log.e("Signup_Page", "ID token is null")
+            Log.e("com.example.gradx.Signup_Page", "ID token is null")
         }
     }
 
@@ -213,7 +213,9 @@ class Signup_Page : AppCompatActivity() {
         return try {
             val task = auth.createUserWithEmailAndPassword(email, password).await()
             if (task.user != null) {
-                db.collection("USERS").document(email).set(user).await()
+                val userWithPhoto = user.toMutableMap()
+                userWithPhoto["profileImageUrl"] = ""
+                db.collection("USERS").document(email).set(userWithPhoto).await()
                 true
             } else {
                 false

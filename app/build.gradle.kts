@@ -55,11 +55,21 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     //noinspection UseTomlInstead
+    implementation ("com.google.firebase:firebase-storage-ktx")
+    implementation (libs.github.glide)
+
+    annotationProcessor (libs.compiler)
+
+    //noinspection UseTomlInstead
     implementation("com.google.firebase:firebase-analytics")
     implementation(platform(libs.firebase.bom))
 
+//TO PICK UP IMAGE FROM GALLARY
+    implementation (libs.circleimageview)
 
-        implementation (libs.integrity)
+    implementation (libs.firebase.storage)
+
+    implementation (libs.integrity)
     implementation(libs.play.services.cast.framework)
     implementation(libs.firebase.crashlytics) // or the latest version
 

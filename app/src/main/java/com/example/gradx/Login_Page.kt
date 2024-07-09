@@ -79,11 +79,15 @@ class Login_Page : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "All fields must be filled!", Toast.LENGTH_LONG).show()
             }
+
         }
 
         binding.signup.setOnClickListener {
             startActivity(Intent(this, Signup_Page::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
+        binding.button5.setOnClickListener {
+            startActivity(Intent(this@Login_Page,UpdatePassword::class.java))
         }
     }
 

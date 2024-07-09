@@ -87,7 +87,7 @@ class OTPVerification : AppCompatActivity() {
             if (authResult.user != null) {
                 // Store user authentication state (e.g., user ID) for session management
                 val userId = authResult.user?.uid
-                // Pass user data to LandingPage
+                // Pass user data to com.example.gradx.com.example.gradx.LandingPage
                 val intent = Intent(this@OTPVerification, LandingPage::class.java)
                 intent.putExtra("userId", userId)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
