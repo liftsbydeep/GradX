@@ -180,32 +180,77 @@ class Signup_Page : AppCompatActivity() {
     }
 
     private fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
-        Log.d("com.example.gradx.Signup_Page", "firebaseAuthWithGoogle: starting")
         val idToken = account.idToken
         if (idToken != null) {
             val credentials = GoogleAuthProvider.getCredential(idToken, null)
             auth.signInWithCredential(credentials)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
-                        Log.d("com.example.gradx.Signup_Page", "firebaseAuthWithGoogle: success")
                         val user = auth.currentUser
+                        Log.d("Signup_Page", "Google sign-in successful. User: ${user?.email}")
+                        user?.let {
+                            val userData = hashMapOf(
+                                "Name" to it.displayName,
+                                "Email" to it.email,
+                                "profileImageUrl" to (it.photoUrl?.toString() ?: ""),
+                                "Phone" to (it.phoneNumber ?: "")
+                            )
+                            createUserDocumentInFirestore(it.email ?: "", userData)
+                        } ?: Log.e("Signup_Page", "User object is null after successful sign-in")
+
+                        // Move these lines inside the user?.let block
                         saveUserLoginState(user?.email)
-
                         startActivity(Intent(this, LandingPage::class.java).apply {
-                            if (user != null) {
-                                putExtra("USER_NAME", user.displayName)
-                            }
+                            putExtra("USER_NAME", user?.displayName)
                         })
-
                         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                         finish()
                     } else {
-                        Log.d("com.example.gradx.Signup_Page", "firebaseAuthWithGoogle: failed")
-                        Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show()
+                        Log.e("Signup_Page", "Google sign-in failed", task.exception)
+                        Toast.makeText(this, "Authentication failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                     }
+                    progressBar.visibility = View.GONE
                 }
         } else {
-            Log.e("com.example.gradx.Signup_Page", "ID token is null")
+            Log.e("Signup_Page", "ID token is null")
+            progressBar.visibility = View.GONE
+            Toast.makeText(this, "Google sign-in failed: ID token is null", Toast.LENGTH_SHORT).show()
+        }
+    }
+    private fun createUserDocumentInFirestore(email: String, userData: HashMap<String, String?>) {
+        if (email.isEmpty()) {
+            Log.e("Signup_Page", "Cannot create user document: Email is empty")
+            return
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val userDocument = db.collection("USERS").document(email)
+                val documentSnapshot = userDocument.get().await()
+
+                if (!documentSnapshot.exists()) {
+                    userDocument.set(userData).await()
+                    Log.d("Signup_Page", "User document created in Firestore for email: $email")
+                } else {
+                    userDocument.update(userData as Map<String, Any>).await()
+                    Log.d("Signup_Page", "User document updated in Firestore for email: $email")
+                }
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@Signup_Page, "User registered successfully", Toast.LENGTH_SHORT).show()
+                    saveUserLoginState(email)
+                    startActivity(Intent(this@Signup_Page, LandingPage::class.java).apply {
+                        putExtra("USER_NAME", userData["Name"])
+                    })
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                    finish()
+                }
+            } catch (e: Exception) {
+                Log.e("Signup_Page", "Error creating/updating user document for email $email", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@Signup_Page, "Failed to register user: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
