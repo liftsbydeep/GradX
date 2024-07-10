@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.gradx"
-        minSdk = 27
+        minSdk = 28
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -57,6 +57,7 @@ dependencies {
     //noinspection UseTomlInstead
     implementation ("com.google.firebase:firebase-storage-ktx")
     implementation (libs.github.glide)
+    implementation(libs.car.ui.lib)
 
     annotationProcessor (libs.compiler)
 

@@ -27,6 +27,7 @@ firebaseCrashlytics = "19.0.1"
 gradle = "8.1.0"
 firebaseCrashlyticsGradle = "3.0.1"
 ucrop = "2.2.8"
+carUiLib = "2.6.0"
 
 [libraries]
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
@@ -60,6 +61,7 @@ firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashly
 gradle = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
 firebase-crashlytics-gradle = { group = "com.google.firebase", name = "firebase-crashlytics-gradle", version.ref = "firebaseCrashlyticsGradle" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
+car-ui-lib = { group = "com.android.car.ui", name = "car-ui-lib", version.ref = "carUiLib" }
 
 
 [plugins]

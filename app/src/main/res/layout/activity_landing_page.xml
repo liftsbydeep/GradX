@@ -17,6 +17,7 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:openDrawer="start">
 
+
         <FrameLayout
             android:id="@+id/frameLayout"
             android:layout_width="match_parent"
@@ -26,10 +27,16 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+
             <include
                 layout="@layout/drawernav"
+
                 android:layout_width="414dp"
                 android:layout_height="728dp" />
+
+
+
+
         </FrameLayout>
 
         <com.google.android.material.navigation.NavigationView
@@ -48,8 +55,10 @@
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        style="@style/CustomBottomNavigationView"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/menu"
+app:itemIconTint="@drawable/bottom_nav_icon_color"
         app:labelVisibilityMode="unlabeled"
         app:itemIconSize="30dp" />
 

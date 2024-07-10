@@ -9,8 +9,10 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -41,7 +43,7 @@ class LandingPage : AppCompatActivity() {
     private lateinit var firestore: FirebaseFirestore
     private lateinit var storage: FirebaseStorage
     private lateinit var drawerLayout: DrawerLayout
-
+private lateinit var progressBar: ProgressBar
     private val REQUEST_IMAGE_PICK = 1002
     private val PROFILE_IMAGE_URI_KEY = "ProfileImageUri"
     private val SHARED_PREFS_KEY = "GradxPrefs"
@@ -64,7 +66,7 @@ class LandingPage : AppCompatActivity() {
         val profileImageView = headerView.findViewById<CircleImageView>(R.id.profilepic)
         val nameTextView = headerView.findViewById<TextView>(R.id.name)
         val emailTextView = headerView.findViewById<TextView>(R.id.email)
-
+progressBar=headerView.findViewById(R.id.progressBar6)
         val isLoggedIn = sharedPreferences.getBoolean("IS_LOGGED_IN", false)
         profileImageView.setOnClickListener {
             openImagePicker()
@@ -96,6 +98,7 @@ class LandingPage : AppCompatActivity() {
         navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.logout -> {
+
                     logoutUser()
                     true
                 }
@@ -176,16 +179,19 @@ class LandingPage : AppCompatActivity() {
     }
 
     private fun logoutUser() {
+        progressBar.visibility=View.VISIBLE
         auth.signOut()
         sharedPreferences.edit()
             .putBoolean("IS_LOGGED_IN", false)
             .remove(PROFILE_IMAGE_URI_KEY)
             .apply()
+        progressBar.visibility=View.GONE
         startActivity(Intent(this, Login_Page::class.java))
         finish()
     }
 
     private fun toggleDarkMode() {
+        progressBar.visibility=View.VISIBLE
         val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         when (currentNightMode) {
             Configuration.UI_MODE_NIGHT_NO -> {
@@ -196,6 +202,7 @@ class LandingPage : AppCompatActivity() {
             }
         }
         this@LandingPage.recreate()
+        progressBar.visibility=View.GONE
     }
 
     private fun openImagePicker() {
@@ -215,6 +222,7 @@ class LandingPage : AppCompatActivity() {
     }
 
     private fun uploadImageToFirebase(imageUri: Uri) {
+        progressBar.visibility=View.VISIBLE
         val userId = auth.currentUser?.uid ?: return
         val email = auth.currentUser?.email ?: return
         val storageRef = storage.reference.child("profileImages/$userId.jpg")
@@ -235,16 +243,23 @@ class LandingPage : AppCompatActivity() {
                     Log.e("Upload", "StorageException: ${exception.message}")
                 }
             }
+            finally {
+                // Hide progress bar after upload completes (success or failure)
+                progressBar.visibility = View.GONE
+            }
         }
     }
 
     private fun updateUserProfileImage(downloadUrl: String, email: String) {
+        progressBar.visibility=View.VISIBLE
         val userDocument = firestore.collection("USERS").document(email)
         userDocument.update("profileImageUrl", downloadUrl)
             .addOnSuccessListener {
+                progressBar.visibility=View.GONE
                 Log.d("Firestore", "User profile image updated successfully.")
             }
             .addOnFailureListener { e ->
+                progressBar.visibility=View.GONE
                 Log.e("Firestore", "Error updating user profile image: $e")
             }
     }
@@ -253,6 +268,7 @@ class LandingPage : AppCompatActivity() {
     }
 
     private fun loadImageIntoHeader(imageUri: Uri) {
+        progressBar.visibility=View.VISIBLE
         val navigationView = findViewById<NavigationView>(R.id.navigationView)
         val headerView = navigationView.getHeaderView(0)
         val profileImageView = headerView.findViewById<CircleImageView>(R.id.profilepic)
@@ -260,5 +276,7 @@ class LandingPage : AppCompatActivity() {
         Glide.with(this)
             .load(imageUri)
             .into(profileImageView)
+        progressBar.visibility=View.GONE
     }
+
 }
