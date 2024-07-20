@@ -28,4 +28,9 @@
     <string name="verify_phone_number_to_start_messaging">Verify Phone Number to start messaging</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="personal_details"><u>Personal Details</u></string>
+    <string name="proffesional_details"><u>proffesional details</u></string>
+    <string name="open_drawer" />
+    <string name="close_drawer" />
+
 </resources>

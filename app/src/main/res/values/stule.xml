@@ -9,6 +9,14 @@
         <item name="itemTextAppearanceActive">@style/CustomBottomNavigationView.TextAppearance</item>
         <item name="itemTextAppearanceInactive">@style/CustomBottomNavigationView.TextAppearance</item>
     </style>
+    <!-- res/values/styles.xml -->
+    <style name="CustomMenuItemTextAppearance" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text</item>
+    </style>
+    <!-- res/values/styles.xml -->
+    <style name="CustomPopupMenu" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:itemTextAppearance">@style/CustomMenuItemTextAppearance</item>
+    </style>
 
     <style name="CustomBottomNavigationView.TextAppearance" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">10sp</item> <!-- Adjust text size -->

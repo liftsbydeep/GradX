@@ -43,7 +43,7 @@ class LandingPage : AppCompatActivity() {
     private lateinit var firestore: FirebaseFirestore
     private lateinit var storage: FirebaseStorage
     private lateinit var drawerLayout: DrawerLayout
-private lateinit var progressBar: ProgressBar
+    private lateinit var progressBar: ProgressBar
     private val REQUEST_IMAGE_PICK = 1002
     private val PROFILE_IMAGE_URI_KEY = "ProfileImageUri"
     private val SHARED_PREFS_KEY = "GradxPrefs"
@@ -61,12 +61,13 @@ private lateinit var progressBar: ProgressBar
 
         drawerLayout = binding.drawer
 
-        val navigationView = findViewById<NavigationView>(R.id.navigationView)
+        val navigationView = findViewById<NavigationView>(R.id.navigationView1)
         val headerView = navigationView.getHeaderView(0)
         val profileImageView = headerView.findViewById<CircleImageView>(R.id.profilepic)
         val nameTextView = headerView.findViewById<TextView>(R.id.name)
         val emailTextView = headerView.findViewById<TextView>(R.id.email)
-progressBar=headerView.findViewById(R.id.progressBar6)
+        progressBar = headerView.findViewById(R.id.progressBar6)
+
         val isLoggedIn = sharedPreferences.getBoolean("IS_LOGGED_IN", false)
         profileImageView.setOnClickListener {
             openImagePicker()
@@ -79,12 +80,14 @@ progressBar=headerView.findViewById(R.id.progressBar6)
             emailTextView.text = auth.currentUser?.email
             loadUserData(auth.currentUser?.email ?: "", nameTextView, profileImageView)
         }
+
         val savedImageUri = sharedPreferences.getString(PROFILE_IMAGE_URI_KEY, null)
         if (savedImageUri != null) {
             Glide.with(this)
                 .load(savedImageUri)
                 .into(profileImageView)
         }
+
         val drawernavView = findViewById<FrameLayout>(R.id.drawernav)
         val menuBtn = drawernavView.findViewById<ImageView>(R.id.menubtn)
         menuBtn.setOnClickListener {
@@ -98,7 +101,6 @@ progressBar=headerView.findViewById(R.id.progressBar6)
         navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.logout -> {
-
                     logoutUser()
                     true
                 }
@@ -110,7 +112,7 @@ progressBar=headerView.findViewById(R.id.progressBar6)
             }
         }
 
-        binding.bottomNavigationView.setOnItemSelectedListener {
+        binding.bottomNavigationView1.setOnItemSelectedListener {
             when (it.itemId) {
                 R.id.home -> FragmentHandler(home())
                 R.id.connect -> FragmentHandler(connect())
@@ -121,23 +123,22 @@ progressBar=headerView.findViewById(R.id.progressBar6)
         }
 
         if (savedInstanceState == null) {
-            binding.bottomNavigationView.selectedItemId = R.id.home
+            binding.bottomNavigationView1.selectedItemId = R.id.home
         }
     }
 
     private fun FragmentHandler(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.frameLayout, fragment)
+            .replace(R.id.frameLayout1, fragment)
             .commit()
     }
 
     private fun showFragment(fragment: Fragment): Boolean {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.frameLayout, fragment)
+            .replace(R.id.frameLayout1, fragment)
             .commit()
         return true
     }
-
 
     private fun loadUserData(email: String, nameTextView: TextView, profileImageView: CircleImageView) {
         lifecycleScope.launch {
@@ -179,19 +180,19 @@ progressBar=headerView.findViewById(R.id.progressBar6)
     }
 
     private fun logoutUser() {
-        progressBar.visibility=View.VISIBLE
+        progressBar.visibility = View.VISIBLE
         auth.signOut()
         sharedPreferences.edit()
             .putBoolean("IS_LOGGED_IN", false)
             .remove(PROFILE_IMAGE_URI_KEY)
             .apply()
-        progressBar.visibility=View.GONE
+        progressBar.visibility = View.GONE
         startActivity(Intent(this, Login_Page::class.java))
         finish()
     }
 
     private fun toggleDarkMode() {
-        progressBar.visibility=View.VISIBLE
+        progressBar.visibility = View.VISIBLE
         val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         when (currentNightMode) {
             Configuration.UI_MODE_NIGHT_NO -> {
@@ -202,7 +203,7 @@ progressBar=headerView.findViewById(R.id.progressBar6)
             }
         }
         this@LandingPage.recreate()
-        progressBar.visibility=View.GONE
+        progressBar.visibility = View.GONE
     }
 
     private fun openImagePicker() {
@@ -223,7 +224,7 @@ progressBar=headerView.findViewById(R.id.progressBar6)
     }
 
     private fun uploadImageToFirebase(imageUri: Uri) {
-        progressBar.visibility=View.VISIBLE
+        progressBar.visibility = View.VISIBLE
         val userId = auth.currentUser?.uid ?: return
         val email = auth.currentUser?.email ?: return
         val storageRef = storage.reference.child("profileImages/$userId.jpg")
@@ -243,8 +244,7 @@ progressBar=headerView.findViewById(R.id.progressBar6)
                 if (exception is com.google.firebase.storage.StorageException) {
                     Log.e("Upload", "StorageException: ${exception.message}")
                 }
-            }
-            finally {
+            } finally {
                 // Hide progress bar after upload completes (success or failure)
                 progressBar.visibility = View.GONE
             }
@@ -252,32 +252,33 @@ progressBar=headerView.findViewById(R.id.progressBar6)
     }
 
     private fun updateUserProfileImage(downloadUrl: String, email: String) {
-        progressBar.visibility=View.VISIBLE
+        progressBar.visibility = View.VISIBLE
         val userDocument = firestore.collection("USERS").document(email)
         userDocument.update("profileImageUrl", downloadUrl)
             .addOnSuccessListener {
-                progressBar.visibility=View.GONE
+                progressBar.visibility = View.GONE
                 Log.d("Firestore", "User profile image updated successfully.")
             }
             .addOnFailureListener { e ->
-                progressBar.visibility=View.GONE
+                progressBar.visibility = View.GONE
                 Log.e("Firestore", "Error updating user profile image: $e")
             }
     }
+
     private fun saveImageUriToSharedPreferences(imageUri: String) {
         sharedPreferences.edit().putString(PROFILE_IMAGE_URI_KEY, imageUri).apply()
     }
 
     private fun loadImageIntoHeader(imageUri: Uri) {
-        progressBar.visibility=View.VISIBLE
-        val navigationView = findViewById<NavigationView>(R.id.navigationView)
+        progressBar.visibility = View.VISIBLE
+        val navigationView = findViewById<NavigationView>(R.id.navigationView1)
         val headerView = navigationView.getHeaderView(0)
         val profileImageView = headerView.findViewById<CircleImageView>(R.id.profilepic)
 
         Glide.with(this)
             .load(imageUri)
             .into(profileImageView)
-        progressBar.visibility=View.GONE
+        progressBar.visibility = View.GONE
     }
 
 }

@@ -19,9 +19,10 @@
         <ImageView
             android:id="@+id/menubtn"
             android:layout_width="wrap_content"
+            android:layout_gravity="start"
             android:layout_height="wrap_content"
             android:layout_marginTop="50dp"
-            android:src="@drawable/baseline_menu_24" />
+            android:src="@drawable/baseline_menu_open_24" />
 
 
     </Toolbar>

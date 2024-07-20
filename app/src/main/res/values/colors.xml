@@ -11,5 +11,8 @@
     <color name="colorPrimary">#6200EE</color>
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
+    <color name="light_grey">#9CEDEDED</color>
     <color name="colorFocusedBorder">#FF0000</color>
+    <color name="text">#FFF0B8</color>
+    <color name="midnight">#010312</color>
 </resources>

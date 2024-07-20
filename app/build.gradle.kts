@@ -59,6 +59,7 @@ dependencies {
     implementation (libs.github.glide)
     implementation(libs.car.ui.lib)
 
+
     annotationProcessor (libs.compiler)
 
     //noinspection UseTomlInstead

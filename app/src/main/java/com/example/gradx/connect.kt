@@ -1,5 +1,6 @@
 package com.example.gradx
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -41,7 +42,10 @@ class connect : Fragment() {
         recyclerView = view.findViewById(R.id.recycler_view)
 
         recyclerView.layoutManager = LinearLayoutManager(context)
-        userAdapter = UserAdapter(userList)
+        userAdapter = UserAdapter(userList){
+                user ->
+            openUserProfile(user)
+        }
         recyclerView.adapter = userAdapter
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -68,7 +72,7 @@ class connect : Fragment() {
             .addOnSuccessListener { documents ->
                 userList.clear()
                 for (document in documents) {
-                    val user = document.toObject(User::class.java)
+                    val user = document.toObject(User::class.java).copy(uuid = document.id)
                     Log.d("Connect", "Fetched user: ${user.name}, ${user.email}")
                     userList.add(user)
                 }
@@ -90,6 +94,14 @@ class connect : Fragment() {
             }
         }
         userAdapter.updateUsers(filteredList)
+    }
+
+    private fun openUserProfile(user: User) {
+        Log.d("Connect", "Opening profile for user with UUID: ${user.uuid}")
+        val intent = Intent(context, UserProfile::class.java).apply {
+            putExtra("USER_ID", user.uuid)
+        }
+        startActivity(intent)
     }
 
     companion object {

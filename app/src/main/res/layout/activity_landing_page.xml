@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
+
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".LandingPage">
@@ -19,10 +20,10 @@
 
 
         <FrameLayout
-            android:id="@+id/frameLayout"
+            android:id="@+id/frameLayout1"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@id/bottom_navigationView"
+            app:layout_constraintBottom_toTopOf="@id/bottom_navigationView1"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -31,8 +32,8 @@
             <include
                 layout="@layout/drawernav"
 
-                android:layout_width="414dp"
-                android:layout_height="728dp" />
+                android:layout_width="405dp"
+                android:layout_height="180dp" />
 
 
 
@@ -40,8 +41,9 @@
         </FrameLayout>
 
         <com.google.android.material.navigation.NavigationView
-            android:id="@+id/navigationView"
+            android:id="@+id/navigationView1"
             android:layout_width="280dp"
+            android:backgroundTint="@color/text"
             android:layout_height="match_parent"
             android:layout_gravity="start"
             app:headerLayout="@layout/header"
@@ -50,14 +52,16 @@
     </androidx.drawerlayout.widget.DrawerLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_navigationView"
+        android:id="@+id/bottom_navigationView1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+
         style="@style/CustomBottomNavigationView"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/menu"
+        android:background="@color/midnight"
 app:itemIconTint="@drawable/bottom_nav_icon_color"
         app:labelVisibilityMode="unlabeled"
         app:itemIconSize="30dp" />

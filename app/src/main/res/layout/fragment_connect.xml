@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".connect"
-    android:background="@color/white">
+    android:background="@color/midnight">
 
     <!-- TODO: Update blank fragment layout -->
 
@@ -28,6 +28,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="371dp"
+
         android:layout_height="668dp"
         android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
