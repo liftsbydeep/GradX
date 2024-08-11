@@ -3,6 +3,7 @@ package com.example.gradx
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -14,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -32,7 +34,11 @@ class UserProfile : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_user_profile)
-
+        findViewById<Button>(R.id.button2).setOnClickListener {
+            val currentUserId = auth.currentUser?.email ?: return@setOnClickListener
+            val targetUserId = intent.getStringExtra("USER_ID") ?: return@setOnClickListener
+            followUser(currentUserId, targetUserId)
+        }
         db = Firebase.firestore
         auth = Firebase.auth
         progressBar = findViewById(R.id.progressBar7)
@@ -47,6 +53,14 @@ class UserProfile : AppCompatActivity() {
 
         if (userId != null) {
             fetchUserDetails(userId)
+        } else {
+            Toast.makeText(this, "User ID not found", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+        if (userId != null) {
+            fetchUserDetails(userId)
+            listenForFollowerChanges(userId)
+            checkFollowStatus(userId)
         } else {
             Toast.makeText(this, "User ID not found", Toast.LENGTH_SHORT).show()
             finish()
@@ -134,7 +148,7 @@ class UserProfile : AppCompatActivity() {
         findViewById<TextView>(R.id.textView34).text=experience
         findViewById<TextView>(R.id.textView36).text=workedfor
         findViewById<TextView>(R.id.textView38).text=skillset
-       findViewById<TextView>(R.id.textView19).text=workingat
+        findViewById<TextView>(R.id.textView19).text=workingat
         findViewById<TextView>(R.id.textView20).text=workcity
         findViewById<TextView>(R.id.textView16).text=designation
         val profileImageView: CircleImageView = findViewById(R.id.profilepic2)
@@ -142,5 +156,125 @@ class UserProfile : AppCompatActivity() {
             .load(userProfileImageUrl)
             .placeholder(R.drawable.baseline_people_alt_24)
             .into(profileImageView)
+    }
+    private fun checkFollowStatus(targetUserId: String) {
+        val currentUserId = auth.currentUser?.email ?: return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val currentUserDoc = db.collection("USERS").document(currentUserId).get().await()
+                val followingList = currentUserDoc.get("followingList") as? List<String> ?: listOf()
+                val isFollowing = targetUserId in followingList
+                withContext(Dispatchers.Main) {
+                    updateFollowButtonUI(isFollowing)
+                }
+            } catch (e: Exception) {
+                Log.e("UserProfile", "Error checking follow status", e)
+            }
+        }
+    }
+
+    private fun followUser(currentUserId: String, targetUserId: String) {
+        if (currentUserId.isEmpty() || targetUserId.isEmpty()) {
+            Log.e("UserProfile", "Invalid user IDs: currentUserId=$currentUserId, targetUserId=$targetUserId")
+            Toast.makeText(this, "Invalid user data", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val targetUserRef = db.collection("USERS").document(targetUserId)
+                val currentUserRef = db.collection("USERS").document(currentUserId)
+
+                val targetUserDoc = targetUserRef.get().await()
+                val currentUserDoc = currentUserRef.get().await()
+
+                if (!targetUserDoc.exists() || !currentUserDoc.exists()) {
+                    Log.e("UserProfile", "User document does not exist. Target: ${targetUserDoc.exists()}, Current: ${currentUserDoc.exists()}")
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@UserProfile, "User data not found", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val followingList = currentUserDoc.get("followingList") as? List<String> ?: listOf()
+                val isFollowing = targetUserId in followingList
+                val currentUserEmail = auth.currentUser?.email
+                val currentFollowing = currentUserDoc.getLong("following") ?: 0
+                val targetFollowers = targetUserDoc.getLong("followers") ?: 0
+
+                if (isFollowing) {
+                    // Unfollow logic
+                    if (currentFollowing > 0) {
+
+                        currentUserRef.update("followingList", FieldValue.arrayRemove(targetUserId)).await()
+
+                        currentUserRef.update("following", FieldValue.increment(-1)).await()
+                    }
+                    if (targetFollowers > 0) {
+                        targetUserRef.update("followers", FieldValue.increment(-1)).await()
+                        targetUserRef.update("followersList", FieldValue.arrayRemove(currentUserEmail)).await()
+                    }
+                } else {
+                    // Follow logic
+                    currentUserRef.update("followingList", FieldValue.arrayUnion(targetUserId)).await()
+                    currentUserRef.update("following", FieldValue.increment(1)).await()
+
+                    targetUserRef.update("followersList", FieldValue.arrayUnion(currentUserEmail)).await()
+                    targetUserRef.update("followers", FieldValue.increment(1)).await()
+                }
+
+                // Update UI
+                withContext(Dispatchers.Main) {
+                    updateFollowButtonUI(!isFollowing)
+                    updateFollowCounts(!isFollowing)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Log.e("UserProfile", "Follow/Unfollow failed", e)
+                    Toast.makeText(this@UserProfile, "Error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun updateFollowButtonUI(isFollowing: Boolean) {
+        val followButton = findViewById<Button>(R.id.button2)
+        followButton.text = if (isFollowing) "Unfollow" else "Follow"
+    }
+    private fun updateFollowCounts(isFollowing: Boolean) {
+        val followersCount = findViewById<TextView>(R.id.textView22)
+        val currentCount = followersCount.text.toString().toInt()
+        val newCount = (currentCount + if (isFollowing) 1 else -1).coerceAtLeast(0)
+        followersCount.text = newCount.toString()
+    }
+
+//    @SuppressLint("SetTextI18n")
+//    private fun updateFollowUI(isFollowing: Boolean) {
+//        val followButton = findViewById<Button>(R.id.button2)
+//        val followersCount = findViewById<TextView>(R.id.textView22)
+//        followButton.text = if (isFollowing) "Unfollow" else "Follow"
+//
+//        val currentCount = followersCount.text.toString().toInt()
+//        val newCount = (currentCount + if (isFollowing) 1 else -1).coerceAtLeast(0)
+//        followersCount.text = newCount.toString()
+//    }
+
+    private fun listenForFollowerChanges(userId: String) {
+        val followersCount = findViewById<TextView>(R.id.textView22)
+        val followingsCount = findViewById<TextView>(R.id.textView24)
+        FirebaseFirestore.getInstance().collection("USERS").document(userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    // Handle error
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    val followerCount = snapshot.getLong("followers") ?: 0
+                    val followingCount = snapshot.getLong("following") ?: 0
+                    followersCount.text = followerCount.coerceAtLeast(0).toString()
+                    followingsCount.text = followingCount.coerceAtLeast(0).toString()
+                }
+            }
     }
 }

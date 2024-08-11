@@ -97,9 +97,12 @@ class connect : Fragment() {
     }
 
     private fun openUserProfile(user: User) {
+
         Log.d("Connect", "Opening profile for user with UUID: ${user.uuid}")
         val intent = Intent(context, UserProfile::class.java).apply {
-            putExtra("USER_ID", user.uuid)
+            putExtra("USER_ID", user.email)
+
+
         }
         startActivity(intent)
     }

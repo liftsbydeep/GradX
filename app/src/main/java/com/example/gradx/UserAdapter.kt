@@ -14,11 +14,16 @@ data class User(
     @field:JvmField @PropertyName("uuid") val uuid: String = "",
     @field:JvmField @PropertyName("Name") val name: String = "",
     @field:JvmField @PropertyName("Email") val email: String = "",
-    @field:JvmField @PropertyName("profileImageUrl") val profileImageUrl: String = ""
-)
-class UserAdapter(private var users: List<User>, private val onUserClick: (User) -> Unit) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
+    @field:JvmField @PropertyName("profileImageUrl") val profileImageUrl: String = "",
 
-    class UserViewHolder(view: View, private val onUserClick: (User) -> Unit) : RecyclerView.ViewHolder(view) {
+)
+class UserAdapter(private var users: List<User>,
+                  private val onUserClick: (User) -> Unit)
+                  : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
+
+    class UserViewHolder(view: View,
+                         private val onUserClick: (User) -> Unit) :
+                         RecyclerView.ViewHolder(view) {
 
         private val nameTextView: TextView = view.findViewById(R.id.userName)
         private val emailTextView: TextView = view.findViewById(R.id.userEmail)
